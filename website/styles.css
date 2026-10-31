@@ -94,6 +94,14 @@ h3 { margin: 8px 0 0; font-size: 18px; font-weight: 620; letter-spacing: -.02em;
 .overview-card, .stat-card { display: grid; min-height: 75px; align-content: center; gap: 9px; padding: 13px 15px; border: 1px solid #1d292e; border-radius: 12px; background: #0a1013; }
 .overview-card > span, .stat-card > span { color: #7d8d91; font-size: 8px; font-weight: 760; letter-spacing: .12em; }
 .overview-card strong { overflow: hidden; font-size: 12px; font-weight: 590; text-overflow: ellipsis; white-space: nowrap; }
+.connection-diagnostics { margin-top: 12px; padding: 13px 15px; border: 1px solid #1d292e; border-radius: 12px; background: #090f12; }
+.connection-diagnostics summary { color: #b7c5c3; cursor: pointer; font-size: 11px; font-weight: 650; }
+.connection-steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 12px 0; padding: 0; list-style: none; }
+.connection-steps li { display: flex; justify-content: space-between; gap: 8px; padding: 9px 10px; border: 1px solid #1c292d; border-radius: 8px; color: #809094; font-size: 9px; }
+.connection-steps li span { color: #a7b3b3; text-align: right; }
+.connection-steps li.is-complete { border-color: #255647; color: #b8d7ce; }
+.connection-steps li.is-complete span { color: var(--green); }
+.diagnostics-list { display: grid; max-height: 180px; gap: 5px; overflow: auto; color: #809094; font: 9px/1.5 ui-monospace, SFMono-Regular, Consolas, monospace; overflow-wrap: anywhere; }
 .sensor-heading { display: flex; align-items: end; justify-content: space-between; gap: 16px; margin: 37px 0 14px; }
 .sensor-heading h3 { margin-top: 7px; }
 .data-scope { color: #7d8d91; font-size: 10px; }
@@ -127,6 +135,7 @@ h3 { margin: 8px 0 0; font-size: 18px; font-weight: 620; letter-spacing: -.02em;
 .experiment-panel .button-row { margin: 0; }
 
 .select-label { display: grid; gap: 6px; color: #809094; font-size: 9px; }
+.history-selectors { display: flex; flex-wrap: wrap; gap: 12px; }
 .select-label select { min-width: 170px; }
 select, input { min-height: 39px; border: 1px solid #29383c; border-radius: 9px; padding: 0 11px; background: #0a1013; color: #e2ecea; font-size: 11px; }
 .analytics-panel { margin-top: 22px; padding: 17px 18px 12px; border: 1px solid #233136; border-radius: 16px; background: linear-gradient(150deg, #0d1518, #090e11); }
@@ -134,6 +143,14 @@ select, input { min-height: 39px; border: 1px solid #29383c; border-radius: 9px;
 .range-switch { display: inline-flex; gap: 4px; padding: 3px; border: 1px solid #1e2b30; border-radius: 9px; background: #080d10; }
 .range-button { min-width: 42px; min-height: 29px; border: 0; border-radius: 6px; background: transparent; color: #829195; cursor: pointer; font-size: 9px; font-weight: 720; }
 .range-button.is-active { background: #12392f; color: #80f3c8; }
+.live-range-button { min-width: 46px; min-height: 29px; padding: 0 7px; border: 0; border-radius: 6px; background: transparent; color: #829195; cursor: pointer; font-size: 9px; font-weight: 720; white-space: nowrap; }
+.live-range-button.is-active { background: #12392f; color: #80f3c8; }
+.chart-actions { margin: 0; }
+.chart-actions .button { min-height: 34px; padding: 0 11px; font-size: 10px; }
+.live-chart-legend { display: flex; flex-wrap: wrap; gap: 12px; min-height: 19px; margin-top: 12px; }
+.live-legend-item { display: inline-flex; align-items: center; gap: 6px; color: #9aa8aa; font-size: 9px; }
+.live-legend-item i { width: 8px; height: 8px; border-radius: 50%; }
+.live-chart-wrap { height: 290px; }
 .chart-range-label { color: #7f9093; font-size: 9px; text-align: right; }
 .chart-wrap { position: relative; height: 250px; margin-top: 13px; }
 canvas { display: block; width: 100%; height: 100%; }
@@ -167,9 +184,18 @@ canvas { display: block; width: 100%; height: 100%; }
 .field-label input { width: 100%; }
 .profile-hint { margin: 10px 0 17px; color: #728286; font-size: 9px; line-height: 1.6; }
 .profile-sensors { display: grid; gap: 10px; }
-.profile-sensor-row { display: grid; grid-template-columns: 1.1fr 1fr .75fr .55fr 1.6fr auto; align-items: end; gap: 9px; padding: 12px; border: 1px solid #1c2a2e; border-radius: 11px; background: #0b1114; }
+.profile-manager { display: grid; grid-template-columns: 1fr 1fr auto; align-items: end; gap: 10px; margin-bottom: 14px; }
+.profile-manager-actions { margin: 0; }
+.profile-presets { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0 17px; }
+.profile-sensor-row { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); align-items: end; gap: 9px; padding: 12px; border: 1px solid #1c2a2e; border-radius: 11px; background: #0b1114; }
 .profile-sensor-row .field-label { min-width: 0; font-size: 8px; }
-.profile-sensor-row input { min-width: 0; width: 100%; min-height: 36px; padding: 0 8px; font-size: 10px; }
+.profile-sensor-row input, .profile-sensor-row select { min-width: 0; width: 100%; min-height: 36px; padding: 0 8px; font-size: 10px; }
+.profile-sensor-row .remove-sensor { justify-self: start; }
+.device-edit-row { display: grid; grid-template-columns: 1fr auto; align-items: end; gap: 10px; padding: 12px 0; border-top: 1px solid #192529; }
+.device-edit-row .button { min-height: 38px; }
+.history-item { flex-wrap: wrap; }
+.history-item > div:first-child { flex: 1 1 100%; }
+.history-item .button { min-height: 30px; padding: 0 9px; font-size: 9px; }
 .remove-sensor { min-height: 36px; border: 1px solid #3b2a2d; border-radius: 8px; padding: 0 9px; background: #1b1013; color: #ff9a9d; cursor: pointer; font-size: 9px; }
 .profile-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
 
@@ -179,6 +205,9 @@ canvas { display: block; width: 100%; height: 100%; }
 .control-state strong { font-size: 12px; }
 .control-state p { max-width: 780px; margin: 6px 0 0; color: #a39781; font-size: 10px; line-height: 1.7; }
 .control-tag { border: 1px solid #55462d; border-radius: 999px; padding: 7px 9px; color: #d5b87d; font-size: 8px; font-weight: 730; letter-spacing: .08em; white-space: nowrap; }
+.browser-limitations { margin-top: 14px; padding: 16px 18px; border: 1px solid #202e33; border-radius: 13px; background: #0a1013; color: #8d9c9e; font-size: 10px; line-height: 1.7; }
+.browser-limitations strong { color: #d6e0de; font-size: 11px; }
+.browser-limitations p { margin: 7px 0 0; }
 .app-banner { display: grid; grid-template-columns: minmax(0, .85fr) minmax(0, 1.15fr); align-items: center; gap: 25px; margin-top: 53px; margin-bottom: 52px; padding: 27px 29px; border: 1px solid #235147; border-radius: 17px; background: radial-gradient(ellipse at 15% 50%, rgb(28 153 117 / 14%), transparent 46%), #0b1315; }
 .app-banner h2 { margin: 9px 0 6px; font-size: 24px; }
 .app-banner p { max-width: 660px; margin: 0; color: #8c9c9e; font-size: 10px; line-height: 1.6; }
@@ -201,7 +230,8 @@ canvas { display: block; width: 100%; height: 100%; }
 @media (max-width: 980px) {
   .hero { grid-template-columns: 1fr .95fr; gap: 18px; }
   .signal-visual { min-height: 340px; padding: 18px 15px 12px; }
-  .profile-sensor-row { grid-template-columns: 1fr 1fr 1fr; }
+  .profile-sensor-row { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .connection-steps { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .profile-sensor-row .remove-sensor { justify-self: start; }
 }
 
@@ -228,6 +258,7 @@ canvas { display: block; width: 100%; height: 100%; }
   .connect-copy { padding-top: 3px; }
   .connect-panel > .button { width: 100%; }
   .overview-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .connection-steps { grid-template-columns: 1fr; }
   .sensor-grid { grid-template-columns: 1fr; }
   .sensor-card { min-height: 155px; }
   .experiment-panel { align-items: stretch; flex-direction: column; }
@@ -240,8 +271,13 @@ canvas { display: block; width: 100%; height: 100%; }
   .two-column { grid-template-columns: 1fr; gap: 28px; }
   .device-history-panel { padding: 17px; }
   .profile-form { padding-right: 12px; padding-left: 12px; }
+  .profile-manager { grid-template-columns: 1fr; }
+  .profile-manager-actions { flex-wrap: wrap; }
   .profile-sensor-row { grid-template-columns: 1fr 1fr; }
-  .profile-sensor-row .field-label:last-of-type { grid-column: 1 / -1; }
+  .profile-sensor-row .remove-sensor { grid-column: 1 / -1; }
+  .live-range-button { min-width: 45px; font-size: 8px; }
+  .chart-actions { width: 100%; }
+  .chart-actions .button { flex: 1; }
   .control-state { align-items: flex-start; flex-wrap: wrap; padding: 15px; }
   .control-tag { margin-left: 54px; }
   .app-banner { grid-template-columns: 1fr; gap: 18px; margin-top: 38px; padding: 21px; }

@@ -12,6 +12,7 @@
   <link rel="apple-touch-icon" href="./nexora-icon-192.png">
   <link rel="stylesheet" href="./styles.css">
   <title>NEXORA — Connect. Monitor. Control.</title>
+  <script src="./ble-protocol.js" defer></script>
   <script src="./app.js" defer></script>
 </head>
 <body>
@@ -24,10 +25,11 @@
     <button class="menu-toggle" id="menu-toggle" type="button" aria-expanded="false" aria-controls="primary-nav">Menu</button>
     <nav class="nav-links" id="primary-nav" aria-label="Main navigation">
       <a href="#dashboard">Dashboard</a>
-      <a href="#analytics">Analytics</a>
       <a href="#devices">Devices</a>
-      <a href="#sensors">Sensors</a>
-      <a href="#controls">Controls</a>
+      <a href="#live-monitoring">Live Monitoring</a>
+      <a href="#sensors">Sensor Configuration</a>
+      <a href="#analytics">Data History</a>
+      <a href="#settings">Settings</a>
       <button class="button button-quiet install-app" id="install-button" type="button" hidden>Install app</button>
     </nav>
   </header>
@@ -92,6 +94,18 @@
         <article class="overview-card"><span>PACKETS</span><strong id="packet-count">0</strong></article>
         <article class="overview-card"><span>LAST TELEMETRY</span><strong id="last-telemetry">—</strong></article>
       </div>
+      <details class="connection-diagnostics" open>
+        <summary>Connection diagnostics</summary>
+        <ol class="connection-steps" id="connection-steps" aria-live="polite">
+          <li data-step="discovered">Device discovered <span>Waiting</span></li>
+          <li data-step="gatt">GATT connected <span>Waiting</span></li>
+          <li data-step="characteristics">Services and characteristics discovered <span>Waiting</span></li>
+          <li data-step="notifications">Notifications enabled or reads ready <span>Waiting</span></li>
+          <li data-step="telemetry">Valid telemetry received <span>Waiting</span></li>
+          <li data-step="freshness">Sensor freshness <span>Unavailable</span></li>
+        </ol>
+        <div class="diagnostics-list" id="diagnostics-list">No device discovery information yet.</div>
+      </details>
       <div class="sensor-heading"><div><div class="eyebrow">LIVE TELEMETRY</div><h3>Sensor readings</h3></div><span class="data-scope" id="sensor-count">No device data yet</span></div>
       <div class="sensor-grid" id="sensor-grid" aria-live="polite">
         <div class="empty-state"><span class="empty-icon">⌁</span><strong>Waiting for a device</strong><p>Connect an ESP32 to populate this area with its configured sensor readings.</p></div>
@@ -102,13 +116,42 @@
       </div>
     </section>
 
+    <section class="section-wrap section-divider" id="live-monitoring">
+      <div class="section-heading">
+        <div><div class="eyebrow">02 / LIVE MONITORING</div><h2>Live sensor graph</h2><p class="section-copy">Plots only BLE readings received by this page. Temperature and humidity use separate value scales and units.</p></div>
+        <span class="data-scope" id="live-graph-status">Waiting for valid telemetry</span>
+      </div>
+      <div class="analytics-panel live-analytics">
+        <div class="chart-toolbar">
+          <div class="range-switch" id="live-range-switch" role="group" aria-label="Live graph time range">
+            <button class="live-range-button is-active" data-range="60000" type="button">1 MIN</button>
+            <button class="live-range-button" data-range="300000" type="button">5 MIN</button>
+            <button class="live-range-button" data-range="1800000" type="button">30 MIN</button>
+            <button class="live-range-button" data-range="3600000" type="button">1 HOUR</button>
+            <button class="live-range-button" data-range="86400000" type="button">24 HOURS</button>
+          </div>
+          <div class="button-row chart-actions">
+            <button class="button button-outline" id="pause-graph-button" type="button">Pause graph</button>
+            <button class="button button-quiet" id="clear-graph-button" type="button">Clear graph</button>
+          </div>
+        </div>
+        <div class="live-chart-legend" id="live-chart-legend" aria-label="Graph series"></div>
+        <div class="chart-wrap live-chart-wrap"><canvas id="live-chart" role="img" aria-label="Live BLE temperature and humidity graph"></canvas><div class="chart-empty" id="live-chart-empty">Connect a BLE device and receive valid sensor readings to plot them.</div></div>
+        <div class="chart-axis"><span id="live-chart-start">—</span><span id="live-chart-units">Actual received samples · no interpolation</span><span id="live-chart-end">—</span></div>
+      </div>
+      <p class="fine-print">The live graph uses actual received timestamps. A reading gap creates a visible break rather than an invented sample.</p>
+    </section>
+
     <section class="section-wrap section-divider" id="analytics">
       <div class="section-heading">
-        <div><div class="eyebrow">02 / ANALYTICS</div><h2>Signals over time</h2><p class="section-copy">Charts and summaries use readings actually received and logged in this browser.</p></div>
-        <label class="select-label" for="chart-sensor">Sensor<select id="chart-sensor" disabled><option>No telemetry yet</option></select></label>
+        <div><div class="eyebrow">03 / DATA HISTORY</div><h2>Signals over time</h2><p class="section-copy">Charts and summaries use readings actually received and logged in this browser.</p></div>
+        <div class="history-selectors">
+          <label class="select-label" for="history-device-select">History device<select id="history-device-select"><option>No saved devices</option></select></label>
+          <label class="select-label" for="chart-sensor">Sensor<select id="chart-sensor" disabled><option>No telemetry yet</option></select></label>
+        </div>
       </div>
       <div class="analytics-panel">
-        <div class="chart-toolbar"><div class="range-switch" role="group" aria-label="History range"><button class="range-button is-active" data-range="3600000" type="button">1H</button><button class="range-button" data-range="86400000" type="button">24H</button><button class="range-button" data-range="604800000" type="button">7D</button><button class="range-button" data-range="2592000000" type="button">30D</button></div><span class="chart-range-label" id="chart-range-label">No readings in this range</span></div>
+        <div class="chart-toolbar"><div class="range-switch" role="group" aria-label="History range"><button class="range-button" data-range="60000" type="button">1 MIN</button><button class="range-button" data-range="300000" type="button">5 MIN</button><button class="range-button" data-range="1800000" type="button">30 MIN</button><button class="range-button is-active" data-range="3600000" type="button">1 HOUR</button><button class="range-button" data-range="86400000" type="button">24 HOURS</button></div><span class="chart-range-label" id="chart-range-label">No readings in this range</span></div>
         <div class="chart-wrap"><canvas id="chart" role="img" aria-label="Historical sensor readings chart"></canvas><div class="chart-empty" id="chart-empty">Real readings will appear here after logging starts.</div></div>
         <div class="chart-axis"><span id="chart-start">—</span><span>Recorded values · local history</span><span id="chart-end">—</span></div>
       </div>
@@ -118,12 +161,12 @@
         <article class="stat-card"><span>AVERAGE</span><strong id="stat-average">—</strong></article>
         <article class="stat-card"><span>SAMPLES</span><strong id="stat-count">0</strong></article>
       </div>
-      <p class="fine-print">History is stored locally in this browser (up to 5,000 readings per device). It is not uploaded to a cloud service. The 1H–30D filter never generates or interpolates missing values.</p>
+      <p class="fine-print">History is stored locally in this browser (up to 5,000 readings per device). It is not uploaded to a cloud service. Ranges never generate or interpolate missing values; 24-hour history requires previously saved samples.</p>
     </section>
 
     <section class="section-wrap section-divider two-column" id="devices">
       <div>
-        <div class="eyebrow">03 / DEVICE MANAGEMENT</div><h2>Device details</h2><p class="section-copy">Only information exposed by the connected BLE profile can be shown.</p>
+        <div class="eyebrow">04 / DEVICE MANAGEMENT</div><h2>Device details</h2><p class="section-copy">Only information exposed by the connected BLE profile can be shown.</p>
         <div class="details-card">
           <div class="detail-row"><span>Device name</span><strong id="device-name">Not connected</strong></div>
           <div class="detail-row"><span>Firmware version</span><strong id="firmware-version">Not reported</strong></div>
@@ -131,6 +174,7 @@
           <div class="detail-row"><span>Signal strength</span><strong id="signal-strength">Not exposed by Web Bluetooth</strong></div>
           <div class="detail-row"><span>GATT service</span><strong class="mono" id="service-value">Configured locally</strong></div>
           <div class="detail-row"><span>Last connection</span><strong id="last-connection">—</strong></div>
+          <div class="device-edit-row"><label class="field-label" for="device-alias">Saved device name<input id="device-alias" maxlength="40" autocomplete="off" placeholder="Use advertised name"></label><button class="button button-outline" id="save-device-alias" type="button" disabled>Save name</button></div>
         </div>
       </div>
       <div class="device-history-panel">
@@ -143,23 +187,30 @@
 
     <section class="section-wrap section-divider" id="sensors">
       <div class="section-heading">
-        <div><div class="eyebrow">04 / SENSOR MANAGEMENT</div><h2>Configure a read-only profile</h2><p class="section-copy">Map numeric BLE characteristics to sensor names and units. Settings stay on this device.</p></div>
+        <div><div class="eyebrow">05 / SENSOR CONFIGURATION</div><h2>Configure BLE sensor profiles</h2><p class="section-copy">Use the Bluetooth SIG Environmental Sensing profile or save a device-specific GATT mapping. Settings stay in this browser.</p></div>
       </div>
-      <details class="profile-details">
+      <details class="profile-details" id="profile-details">
         <summary>Configure GATT service and sensor characteristics</summary>
         <form id="profile-form" class="profile-form">
+          <div class="profile-manager">
+            <label class="field-label" for="profile-select">Saved profiles<select id="profile-select"></select></label>
+            <label class="field-label" for="profile-name">Profile name<input id="profile-name" maxlength="48" autocomplete="off" required></label>
+            <div class="profile-actions profile-manager-actions"><button class="button button-outline" id="new-profile-button" type="button">New profile</button><button class="button button-quiet" id="delete-profile-button" type="button">Delete profile</button></div>
+          </div>
+          <div class="profile-presets"><button class="button button-outline" id="sig-profile-button" type="button">Use Bluetooth SIG Environmental Sensing</button><button class="button button-outline" id="legacy-profile-button" type="button">Use existing ESP32 profile</button></div>
           <label class="field-label" for="service-uuid">GATT service UUID<input id="service-uuid" name="serviceUuid" autocomplete="off" spellcheck="false" required></label>
-          <div class="profile-hint">Each configured characteristic must send a UTF-8 numeric value and support BLE notifications. Use the actual UUIDs from your ESP32 firmware.</div>
+          <div class="profile-hint">Enter a 16-bit SIG UUID (such as 181A), a Bluetooth SIG alias (environmental_sensing), or a full 128-bit UUID. Configure a format and read/notify mode per characteristic.</div>
           <div id="profile-sensors" class="profile-sensors"></div>
           <div class="profile-actions"><button class="button button-outline" id="add-sensor-button" type="button">Add sensor</button><button class="button button-primary" type="submit">Save profile</button><button class="button button-quiet" id="reset-profile-button" type="button">Restore default</button></div>
-          <p class="fine-print">This profile does not discover physical I²C/SPI sensors, parse arbitrary JSON, or send commands. The ESP32 firmware must read sensors and publish their values over BLE.</p>
+          <p class="fine-print">Available services and characteristics are enumerated only after the device grants GATT access. Sensor hardware must be read by device firmware and transmitted over BLE. NEXORA does not infer a sensor model or send control commands.</p>
         </form>
       </details>
     </section>
 
-    <section class="section-wrap section-divider" id="controls">
-      <div class="section-heading"><div><div class="eyebrow">05 / DEVICE CONTROL</div><h2>Controls stay device-defined</h2><p class="section-copy">NEXORA never treats a button press as a confirmed device command.</p></div></div>
+    <section class="section-wrap section-divider" id="settings">
+      <div class="section-heading"><div><div class="eyebrow">06 / SETTINGS AND COMPATIBILITY</div><h2>Local by design</h2><p class="section-copy">Configure profiles locally and inspect real device capabilities before relying on telemetry.</p></div></div>
       <div class="control-state"><span class="control-lock" aria-hidden="true">⌑</span><div><strong id="controls-title">No supported controls reported</strong><p id="controls-description">The current ESP32 profile exposes read/notify sensor characteristics only. No writable command or acknowledgement characteristic is configured, so output controls are unavailable.</p></div><span class="control-tag">READ-ONLY PROFILE</span></div>
+      <div class="browser-limitations"><strong>Browser Bluetooth limitations</strong><p>Web Bluetooth is BLE GATT only; it cannot access Bluetooth Classic SPP. It requires HTTPS, a compatible browser, a user gesture, and this page must remain open. The browser does not expose a universal BLE scan list or RSSI for arbitrary devices.</p><p>Telemetry and historical samples stay in local browser storage. Nothing is sent to a cloud service. Native Android software can add Bluetooth Classic support separately; the website does not claim that capability.</p></div>
     </section>
 
     <section class="section-wrap app-banner" id="install" aria-labelledby="android-downloads-title">

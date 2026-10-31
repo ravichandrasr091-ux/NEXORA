@@ -1,9 +1,10 @@
 "use strict";
 
-const CACHE_NAME = "nexora-shell-v3";
+const CACHE_NAME = "nexora-shell-v4";
 const APP_SHELL = [
   "./",
   "./styles.css",
+  "./ble-protocol.js",
   "./app.js",
   "./manifest.webmanifest",
   "./nexora-icon-192.png",
