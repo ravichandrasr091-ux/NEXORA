@@ -1,7 +1,14 @@
 "use strict";
 
-const CACHE_NAME = "ragi-incubator-shell-v1";
-const APP_SHELL = ["./", "./manifest.webmanifest", "./icon.svg"];
+const CACHE_NAME = "nexora-shell-v2";
+const APP_SHELL = [
+  "./",
+  "./styles.css",
+  "./app.js",
+  "./manifest.webmanifest",
+  "./nexora-icon-192.png",
+  "./nexora-icon-512.png"
+];
 
 self.addEventListener("install", event => {
   event.waitUntil(
@@ -15,7 +22,9 @@ self.addEventListener("activate", event => {
   event.waitUntil(
     caches.keys()
       .then(keys => Promise.all(
-        keys.filter(key => key !== CACHE_NAME).map(key => caches.delete(key))
+        keys.filter(key => key === "ragi-incubator-shell-v1" || key.startsWith("nexora-shell-"))
+          .filter(key => key !== CACHE_NAME)
+          .map(key => caches.delete(key))
       ))
       .then(() => self.clients.claim())
   );
@@ -31,13 +40,15 @@ self.addEventListener("fetch", event => {
       fetch(request)
         .then(response => {
           const copy = response.clone();
-          caches.open(CACHE_NAME).then(cache => cache.put("./", copy));
+          caches.open(CACHE_NAME)
+            .then(cache => cache.put("./", copy))
+            .catch(error => console.error("Could not cache the NEXORA page shell.", error));
           return response;
         })
         .catch(async () => {
           const cachedPage = await caches.match("./");
           if (cachedPage) return cachedPage;
-          return new Response("Ragi Incubator is offline. Reconnect to load the monitor.", {
+          return new Response("NEXORA is offline. Reconnect to load the device monitor.", {
             status: 503,
             headers: { "Content-Type": "text/plain; charset=utf-8" }
           });
