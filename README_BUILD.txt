@@ -7,8 +7,8 @@ PROJECT AND ARCHITECTURE
 - The website and PWA have no native Bluetooth Classic SPP access.
 
 ANDROID APPLICATION
-- Current app source version: 3.3 (version code 7, application ID `com.nexora.iotmonitor`).
-- Android 3.3 installs separately alongside earlier versions. App-local preferences and sensor history are not transferred; keep the old installation to retain that data.
+- Only Android 2.0 is currently offered on the website. Later APK files remain archived in the repository but are not published while their reported startup issue is investigated.
+- The supported Android 2.0 APK uses application ID `com.muted.ragiincubator`, version code 2, and its original debug signing certificate. Its settings and sensor history remain local to the app.
 - Native Android destinations: Home, Devices, Analytics, and Settings. Device identity, BLE UUID profile, preferences, connection events, and up to 5,000 sensor samples are stored locally on the phone.
 - Bluetooth Classic uses Android RFCOMM with the standard SPP UUID `00001101-0000-1000-8000-00805F9B34FB`. Pair the ESP32 once in Android Bluetooth Settings, then select its paired entry once in NEXORA. With automatic reconnect enabled, the saved address is retried at launch/foreground and after brief connection failures (up to three retries per failure cycle).
 - Classic telemetry is parsed as independent UTF-8 lines such as `Temperature: 28.45 C`, `Humidity: 64.25 % RH`, and optionally `VOC raw: 12345`. Connection is not reported until the RFCOMM socket connects. Bluetooth Classic firmware must actually implement SPP and send these readings.
@@ -63,15 +63,8 @@ TESTING
 - No physical ESP32, sensor, Android handset, or Windows BLE hardware verification is claimed until these steps have been performed on the user's actual devices.
 
 BUILD AND DEPLOY
-- GitHub Actions on pushes to `main` validates and deploys the static website with separately downloadable Android 2.0, 3.0, 3.1, 3.1.1, 3.2, and 3.3 APKs. Downloads and installation are manual; Android asks for confirmation.
-- Android 3.2 uses a dark emerald dashboard, native temperature gauge, real-history charts and summaries, and grouped device/settings screens. It preserves saved sensor data and Bluetooth permissions/reconnect behavior from 3.1.1.
-- Android 3.3 retains the V3.2 UI and Bluetooth behavior but uses the new application ID `com.nexora.iotmonitor` to avoid install conflicts. It has separate app-local settings and history.
-- The Android 2.0/3.0 APKs use certificate SHA-256 `c25c4d71123b7de2e7de0bb97800bd662800c0c5a570b82efadbe34401b3ee90`. Versions 3.1/3.1.1/3.2 use debug certificate SHA-256 `133af7ba25daf54321cf90ad94c3b706b2d8e6cf4bc91e3f4f032dcb47ed4296`; 3.2 can update 3.1/3.1.1, but not 2.0/3.0. V3.3 has a separate application ID and installs alongside all those versions without replacing them. V3.3 app-local settings and history are separate. A matching original signing keystore is required for a safe in-place update within the older package.
+- GitHub Actions on pushes to `main` tests and deploys the static website with only the Android 2.0 APK in its public download directory. Newer APK archives are retained in the source repository and are not published.
+- Android 2.0 uses certificate SHA-256 `c25c4d71123b7de2e7de0bb97800bd662800c0c5a570b82efadbe34401b3ee90`. Android 3.x builds use different package identities and/or signing keys; they are not offered as updates.
 - Website: https://ravichandrasr091-ux.github.io/NEXORA/
-- Android 3.3 APK: https://ravichandrasr091-ux.github.io/NEXORA/downloads/nexora-android-v3.3.apk
-- Android 3.2 APK: https://ravichandrasr091-ux.github.io/NEXORA/downloads/nexora-android-v3.2.apk
-- Android 3.1.1 APK: https://ravichandrasr091-ux.github.io/NEXORA/downloads/nexora-android-v3.1.1.apk
-- Android 3.1 APK: https://ravichandrasr091-ux.github.io/NEXORA/downloads/nexora-android-v3.1.apk
-- Android 3.0 APK: https://ravichandrasr091-ux.github.io/NEXORA/downloads/nexora-android-v3.0.apk
 - Android 2.0 APK: https://ravichandrasr091-ux.github.io/NEXORA/downloads/nexora-android-v2.0.apk
 - A debug APK is for testing and is not a Play Store release.
