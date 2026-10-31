@@ -1,4 +1,4 @@
-name: Deploy NEXORA website
+name: Build Android APK and deploy website
 
 on:
   push:
@@ -21,13 +21,17 @@ jobs:
       - name: Check out source
         uses: actions/checkout@v4
 
-      - name: Set up Node
+      - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: "20"
 
-      - name: Test BLE protocol
-        run: node --test website/ble-protocol.test.js
+      - name: Validate website code
+        run: |
+          node --check website/ble-protocol.js
+          node --check website/app.js
+          node --check website/sw.js
+          node --test website/ble-protocol.test.js
 
       - name: Prepare website and preserved APK downloads
         run: |
@@ -37,9 +41,10 @@ jobs:
           test -s website/downloads/nexora-android-v3.1.apk
           test -s website/downloads/nexora-android-v3.1.1.apk
           test -s website/downloads/nexora-android-v3.2.apk
+          test -s website/downloads/nexora-android-v3.3.apk
           mkdir -p site/downloads
           cp website/index.html website/styles.css website/ble-protocol.js website/app.js website/manifest.webmanifest website/sw.js website/nexora-icon-192.png website/nexora-icon-512.png site/
-          cp website/downloads/nexora-android-v2.0.apk website/downloads/nexora-android-v3.0.apk website/downloads/nexora-android-v3.1.apk website/downloads/nexora-android-v3.1.1.apk website/downloads/nexora-android-v3.2.apk site/downloads/
+          cp website/downloads/nexora-android-v2.0.apk website/downloads/nexora-android-v3.0.apk website/downloads/nexora-android-v3.1.apk website/downloads/nexora-android-v3.1.1.apk website/downloads/nexora-android-v3.2.apk website/downloads/nexora-android-v3.3.apk site/downloads/
 
       - name: Upload website artifact
         uses: actions/upload-pages-artifact@v3
