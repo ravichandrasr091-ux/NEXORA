@@ -1,6 +1,6 @@
 "use strict";
 
-const CACHE_NAME = "nexora-shell-v2";
+const CACHE_NAME = "nexora-shell-v3";
 const APP_SHELL = [
   "./",
   "./styles.css",
@@ -57,7 +57,7 @@ self.addEventListener("fetch", event => {
     return;
   }
 
-  if (url.pathname.endsWith("/downloads/ragi-incubator.apk")) return;
+  if (/\/downloads\/[^/]+\.apk$/i.test(url.pathname)) return;
   event.respondWith(
     caches.match(request).then(cached => cached || fetch(request))
   );

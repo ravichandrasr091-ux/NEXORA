@@ -162,9 +162,28 @@
       <div class="control-state"><span class="control-lock" aria-hidden="true">⌑</span><div><strong id="controls-title">No supported controls reported</strong><p id="controls-description">The current ESP32 profile exposes read/notify sensor characteristics only. No writable command or acknowledgement characteristic is configured, so output controls are unavailable.</p></div><span class="control-tag">READ-ONLY PROFILE</span></div>
     </section>
 
-    <section class="section-wrap app-banner" id="install">
-      <div><div class="eyebrow">NEXORA FOR ANDROID</div><h2>Take your device monitor with you.</h2><p>The native app connects over Bluetooth. The downloadable build is a debug APK for testing, not a Play Store release.</p></div>
-      <a class="button button-primary" href="./downloads/ragi-incubator.apk" download="NEXORA-Android.apk">Download Android APK <span aria-hidden="true">↗</span></a>
+    <section class="section-wrap app-banner" id="install" aria-labelledby="android-downloads-title">
+      <div class="app-banner-heading">
+        <div class="eyebrow">NEXORA FOR ANDROID</div>
+        <h2 id="android-downloads-title">Choose your app version.</h2>
+        <p>Each release has its own APK. These debug builds are for testing and are not Play Store releases.</p>
+      </div>
+      <div class="apk-version-list" aria-label="Available Android app versions">
+        <article class="apk-version">
+          <div class="apk-version-info">
+            <div class="apk-version-title"><strong>NEXORA Android 3.0</strong><span class="apk-version-badge">LATEST</span></div>
+            <p>Version code 3 · Current Android app</p>
+          </div>
+          <a class="button button-primary" href="./downloads/nexora-android-v3.0.apk" download="NEXORA-Android-v3.0.apk" aria-label="Download NEXORA Android 3.0 APK">Download APK <span aria-hidden="true">↗</span></a>
+        </article>
+        <article class="apk-version">
+          <div class="apk-version-info">
+            <div class="apk-version-title"><strong>NEXORA Android 2.0</strong><span class="apk-version-badge apk-version-badge-older">PREVIOUS</span></div>
+            <p>Version code 2 · Previous Android release</p>
+          </div>
+          <a class="button button-quiet" href="./downloads/nexora-android-v2.0.apk" download="NEXORA-Android-v2.0.apk" aria-label="Download NEXORA Android 2.0 APK">Download APK <span aria-hidden="true">↗</span></a>
+        </article>
+      </div>
     </section>
   </main>
 

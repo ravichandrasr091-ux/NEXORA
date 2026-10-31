@@ -7,6 +7,7 @@ PROJECT AND ARCHITECTURE
 - The website and PWA have no native Bluetooth Classic SPP access.
 
 ANDROID APPLICATION
+- Current app version: 3.0 (version code 3).
 - Native Android destinations: Home, Devices, Analytics, and Settings. Device identity, BLE UUID profile, preferences, connection events, and up to 5,000 sensor samples are stored locally on the phone.
 - Bluetooth Classic uses Android RFCOMM with the standard SPP UUID `00001101-0000-1000-8000-00805F9B34FB`. Pair the ESP32 once in Android Bluetooth Settings, then select its paired entry once in NEXORA. With automatic reconnect enabled, the saved address is retried at launch/foreground and after brief connection failures (up to three retries per failure cycle).
 - Classic telemetry is parsed as independent UTF-8 lines such as `Temperature: 28.45 C`, `Humidity: 64.25 % RH`, and optionally `VOC raw: 12345`. Connection is not reported until the RFCOMM socket connects. Bluetooth Classic firmware must actually implement SPP and send these readings.
@@ -61,7 +62,8 @@ TESTING
 - No physical ESP32, sensor, Android handset, or Windows BLE hardware verification is claimed until these steps have been performed on the user's actual devices.
 
 BUILD AND DEPLOY
-- GitHub Actions on pushes to `main` builds an Android debug APK from `RagiIncubatorAndroid-source.zip` and deploys the website/PWA to GitHub Pages.
+- GitHub Actions on pushes to `main` builds separate Android 3.0 and 2.0 debug APKs from their matching source trees, then deploys both downloads with the website/PWA to GitHub Pages.
 - Website: https://ravichandrasr091-ux.github.io/RagiIncubatorAndroid/
-- Android debug APK: https://ravichandrasr091-ux.github.io/RagiIncubatorAndroid/downloads/ragi-incubator.apk
+- Android 3.0 APK: https://ravichandrasr091-ux.github.io/RagiIncubatorAndroid/downloads/nexora-android-v3.0.apk
+- Android 2.0 APK: https://ravichandrasr091-ux.github.io/RagiIncubatorAndroid/downloads/nexora-android-v2.0.apk
 - A debug APK is for testing and is not a signed Play Store release. No release keystore/password is stored in this project.

@@ -40,16 +40,29 @@ jobs:
       - name: Install Android API 35
         run: sdkmanager "platforms;android-35" "build-tools;35.0.0"
 
-      - name: Build Android APK
+      - name: Build Android 3.0 APK
         run: |
-          unzip -q RagiIncubatorAndroid-source.zip -d android-source
-          project_dir="$(find android-source -name settings.gradle.kts -print -quit | xargs dirname)"
+          unzip -q NEXORA-Android-v3.0-source.zip -d android-v3-source
+          project_dir="$(find android-v3-source -name settings.gradle.kts -print -quit | xargs dirname)"
           test -f "$project_dir/app/build.gradle.kts"
           gradle --no-daemon -p "$project_dir" assembleDebug
+          apk="$project_dir/app/build/outputs/apk/debug/app-debug.apk"
+          metadata="$project_dir/app/build/outputs/apk/debug/output-metadata.json"
+          jq -e '.applicationId == "com.muted.ragiincubator" and any(.elements[]; .versionCode == 3 and .versionName == "3.0")' "$metadata"
           mkdir -p site/downloads
-          cp "$project_dir/app/build/outputs/apk/debug/app-debug.apk" site/downloads/ragi-incubator.apk
+          cp "$apk" site/downloads/nexora-android-v3.0.apk
 
-      - name: Prepare PWA and APK download
+      - name: Build Android 2.0 APK
+        run: |
+          unzip -q RagiIncubatorAndroid-source.zip -d android-v2-source
+          project_dir="$(find android-v2-source -name settings.gradle.kts -print -quit | xargs dirname)"
+          test -f "$project_dir/app/build.gradle.kts"
+          gradle --no-daemon -p "$project_dir" assembleDebug
+          metadata="$project_dir/app/build/outputs/apk/debug/output-metadata.json"
+          jq -e '.applicationId == "com.muted.ragiincubator" and any(.elements[]; .versionCode == 2 and .versionName == "2.0")' "$metadata"
+          cp "$project_dir/app/build/outputs/apk/debug/app-debug.apk" site/downloads/nexora-android-v2.0.apk
+
+      - name: Prepare PWA and APK downloads
         run: |
           cp website/index.html website/styles.css website/app.js website/manifest.webmanifest website/sw.js website/nexora-icon-192.png website/nexora-icon-512.png site/
 
