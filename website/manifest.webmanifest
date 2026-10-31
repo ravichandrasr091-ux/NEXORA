@@ -2,7 +2,7 @@
   "id": "./",
   "name": "NEXORA — Connect. Monitor. Control.",
   "short_name": "NEXORA",
-  "description": "Connect ESP32 devices over Bluetooth and monitor real sensor data.",
+  "description": "Smart IoT Monitoring Platform for real ESP32 sensor data.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

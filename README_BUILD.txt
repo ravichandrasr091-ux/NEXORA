@@ -7,7 +7,7 @@ PROJECT AND ARCHITECTURE
 - The website and PWA have no native Bluetooth Classic SPP access.
 
 ANDROID APPLICATION
-- Current app version: 3.0 (version code 3).
+- Current app version: 3.1 (version code 4).
 - Native Android destinations: Home, Devices, Analytics, and Settings. Device identity, BLE UUID profile, preferences, connection events, and up to 5,000 sensor samples are stored locally on the phone.
 - Bluetooth Classic uses Android RFCOMM with the standard SPP UUID `00001101-0000-1000-8000-00805F9B34FB`. Pair the ESP32 once in Android Bluetooth Settings, then select its paired entry once in NEXORA. With automatic reconnect enabled, the saved address is retried at launch/foreground and after brief connection failures (up to three retries per failure cycle).
 - Classic telemetry is parsed as independent UTF-8 lines such as `Temperature: 28.45 C`, `Humidity: 64.25 % RH`, and optionally `VOC raw: 12345`. Connection is not reported until the RFCOMM socket connects. Bluetooth Classic firmware must actually implement SPP and send these readings.
@@ -62,8 +62,11 @@ TESTING
 - No physical ESP32, sensor, Android handset, or Windows BLE hardware verification is claimed until these steps have been performed on the user's actual devices.
 
 BUILD AND DEPLOY
-- GitHub Actions on pushes to `main` builds separate Android 3.0 and 2.0 debug APKs from their matching source trees, then deploys both downloads with the website/PWA to GitHub Pages.
-- Website: https://ravichandrasr091-ux.github.io/RagiIncubatorAndroid/
-- Android 3.0 APK: https://ravichandrasr091-ux.github.io/RagiIncubatorAndroid/downloads/nexora-android-v3.0.apk
-- Android 2.0 APK: https://ravichandrasr091-ux.github.io/RagiIncubatorAndroid/downloads/nexora-android-v2.0.apk
-- A debug APK is for testing and is not a signed Play Store release. No release keystore/password is stored in this project.
+- GitHub Actions on pushes to `main` validates and deploys the static website with separately downloadable Android 2.0, 3.0, and 3.1 APKs. Downloads and installation are manual; Android asks for confirmation.
+- Android 3.1 loads saved sensor history off the UI thread to keep initial screen rendering responsive.
+- The currently published Android 2.0/3.0 APKs use certificate SHA-256 `c25c4d71123b7de2e7de0bb97800bd662800c0c5a570b82efadbe34401b3ee90`. The locally built 3.1 debug APK uses a different debug signing key (`133af7ba25daf54321cf90ad94c3b706b2d8e6cf4bc91e3f4f032dcb47ed4296`), so Android cannot install it over those existing app installations. Uninstalling first removes app data. A matching original signing keystore is required for a safe in-place update.
+- Website: https://ravichandrasr091-ux.github.io/NEXORA/
+- Android 3.1 APK: https://ravichandrasr091-ux.github.io/NEXORA/downloads/nexora-android-v3.1.apk
+- Android 3.0 APK: https://ravichandrasr091-ux.github.io/NEXORA/downloads/nexora-android-v3.0.apk
+- Android 2.0 APK: https://ravichandrasr091-ux.github.io/NEXORA/downloads/nexora-android-v2.0.apk
+- A debug APK is for testing and is not a Play Store release.
