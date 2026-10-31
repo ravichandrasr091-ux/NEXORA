@@ -1,53 +1,67 @@
-NEXORA — CONNECT. MONITOR. CONTROL.
+NEXORA — UNIVERSAL BLE MONITORING
 
-PROJECT
-- NEXORA is the rebranded website/PWA and Android monitor in this project. The Android package ID remains unchanged so existing installs can update.
-- The site is a static HTML/CSS/JavaScript PWA. It connects directly to BLE devices; no account or cloud backend is required.
-- The supplied NEXORA artwork is used for the website/PWA and Android launcher icon.
-- No physical ESP32 or Android-device test is claimed by this build.
+PROJECT AND ARCHITECTURE
+- The website is a static, framework-free HTML/CSS/JavaScript PWA. `website/app.js` owns UI state and GATT lifecycle; `website/ble-protocol.js` contains pure UUID and payload decoding helpers with Node tests.
+- No backend or cloud telemetry service is used. Profiles, device labels, and logged readings remain in this browser's local storage.
+- The Android application is a separate native Kotlin application. Its Classic SPP and BLE transports, local settings, and sensor history are independent of the website.
+- The website and PWA have no native Bluetooth Classic SPP access.
 
-WEB BLUETOOTH AND SENSOR PROFILES
-- Open the GitHub Pages website in a supported Web Bluetooth browser over HTTPS, then choose Connect device. The device chooser appears only after a user gesture.
-- The default profile preserves the existing ESP32 GATT service and SHT4x temperature/humidity characteristics below. The ESP32 firmware must advertise that service and send UTF-8 numeric readings.
-- In Sensor Management, configure one BLE service UUID and up to 16 characteristic UUIDs. Each characteristic must expose numeric UTF-8 data and support notifications/indications or reads. Names, types, units, and display precision are profile metadata saved only in this browser.
-- The web client does not discover physical I2C/SPI sensors, identify their models, parse arbitrary JSON, write to unknown characteristics, or control outputs. Sensor hardware must be read by ESP32 firmware and transmitted over BLE.
-- Existing firmware device name: `Ragi_Incubator`. Its BLE service and characteristics:
-  - Service: `7b7e0001-7d7a-4f4e-9b8d-2f8c4a6d1000`
-  - Temperature: `7b7e0002-7d7a-4f4e-9b8d-2f8c4a6d1000`
-  - Relative humidity: `7b7e0003-7d7a-4f4e-9b8d-2f8c4a6d1000`
-- The current firmware implements only an SHT4x temperature/humidity sensor on SDA GPIO26 and SCL GPIO27. Other sensor families, firmware metadata, uptime, BLE RSSI, and command acknowledgements are not provided.
-- Sensor values become stale after 8 seconds without a fresh reading and immediately show stale when disconnected. BLE link state is displayed separately from sensor freshness.
+ANDROID APPLICATION
+- Native Android destinations: Home, Devices, Analytics, and Settings. Device identity, BLE UUID profile, preferences, connection events, and up to 5,000 sensor samples are stored locally on the phone.
+- Bluetooth Classic uses Android RFCOMM with the standard SPP UUID `00001101-0000-1000-8000-00805F9B34FB`. Pair the ESP32 once in Android Bluetooth Settings, then select its paired entry once in NEXORA. With automatic reconnect enabled, the saved address is retried at launch/foreground and after brief connection failures (up to three retries per failure cycle).
+- Classic telemetry is parsed as independent UTF-8 lines such as `Temperature: 28.45 C`, `Humidity: 64.25 % RH`, and optionally `VOC raw: 12345`. Connection is not reported until the RFCOMM socket connects. Bluetooth Classic firmware must actually implement SPP and send these readings.
+- Native BLE scans only after the user taps Scan. It supports the SIG Environmental Sensing service `181A` with temperature `2A6E` and humidity `2A6F`, plus the existing custom UUID profile. SIG temperature is signed little-endian int16 and humidity is unsigned little-endian uint16, both in hundredths. Read-only characteristics are polled every two seconds; notify/indicate characteristics are subscribed to after CCCD confirmation.
+- Settings can configure the custom BLE service, temperature, humidity, and optional VOC raw characteristic UUIDs. Custom text values are parsed as numeric UTF-8; SIG values are decoded as binary. VOC is shown only when a configured characteristic or SPP line provides a valid raw signal. A raw SGP40 signal is not a VOC concentration or VOC Index.
+- The existing `ESP32_BLE_SHT4X.ino` example currently exposes BLE only and reads an SHT4x. It does not implement Bluetooth Classic SPP or an SGP40 driver/characteristic. Thus Classic monitoring and raw VOC require compatible firmware; the Android app does not simulate those values.
+- Android monitoring remains active only while the app process is running. No foreground service or continuous background Bluetooth connection is claimed. A real valid measurement is required for the receiving-data state; old readings are marked stale after 15 seconds.
+- CSV export uses Android's document picker. Temperature is stored in Celsius and converted only for display/export when Fahrenheit is selected. Measurements are not sent to a cloud service.
+- Build with JDK 17, Android SDK platform 35, and Gradle 8.9: `gradle --no-daemon assembleDebug`. The debug APK is written to `app/build/outputs/apk/debug/app-debug.apk`. The project has no release keystore configuration; debug output is not a Play Store release.
+- Physical Bluetooth/ESP32 tests have not been performed in this workspace. Test Classic SPP and BLE on the target Android phone and compatible firmware before relying on device compatibility.
 
-DATA, ANALYTICS, AND CONTROLS
-- Readings and connection history remain on this browser. Up to 5,000 logged samples per device are retained in browser storage; clearing browser data removes them.
-- Start logging while connected to persist actual incoming values. CSV export includes timestamp, device, sensor metadata, characteristic UUID, value, and configured unit.
-- Analytics filters 1 hour, 24 hours, 7 days, and 30 days of actual stored/session readings. No sample values are simulated or interpolated.
-- Web Bluetooth does not expose RSSI in this profile. Firmware version and device uptime are not reported by the current firmware; the interface labels them unavailable.
-- The firmware exposes no command/write characteristic. Controls are therefore unavailable; the site never reports an unimplemented device command as successful.
-- The service worker caches the NEXORA interface for offline viewing. Bluetooth still needs a supported browser, a secure context, user interaction, and an open page. The APK is not cached by the service worker.
+WEB BLUETOOTH LIMITS AND CONNECTION
+- Open the GitHub Pages site over HTTPS in a BLE-capable Chrome/Edge browser. Click Connect device to open the browser's system chooser. `requestDevice()` requires this user gesture.
+- Web Bluetooth does not provide an unrestricted background scan list. NEXORA uses `acceptAllDevices` and requests access only to services in saved profiles. It lists services and characteristics available through the resulting GATT permission; devices may hide other services.
+- A selected device is not called connected until `device.gatt.connect()` succeeds. The diagnostics show discovery, GATT connection, mapped characteristics, notification/read readiness, valid telemetry, and freshness separately.
+- Read-only data is received through GATT reads or notification/indication subscriptions. There are no control writes. Firmware version, uptime, and BLE RSSI are shown as unavailable unless a future firmware/protocol explicitly provides them.
+- Keep the page in the foreground while monitoring. Browser support and BLE permissions vary by OS; Web Bluetooth is not available in Firefox or Safari in their standard configurations, and is not supported from an insecure network origin.
 
-ANDROID APP
-- The Android application is branded NEXORA and uses the supplied launcher icon while retaining its existing application ID and BLE service UUIDs.
-- Build with Android Studio, Android SDK Platform 35, and the project's Gradle configuration. The debug APK is produced at `app/build/outputs/apk/debug/app-debug.apk`.
-- The Android app currently connects to the existing service and its two temperature/humidity characteristics. The website's configurable multi-characteristic profiles do not automatically change Android's BLE profile.
-- This project has no release keystore or protected release-signing configuration. GitHub Actions publishes a debug APK for testing, not a Play Store release. Never disable Play Protect or share a release keystore/password in source control.
+SAVED PROFILES AND TELEMETRY FORMATS
+- Sensor Configuration has local saved profiles, a Bluetooth SIG Environmental Sensing preset, and the original ESP32 preset. The existing ESP32 UUID mapping is preserved.
+- Service and characteristic identifiers accept 16-bit UUIDs (for example `181A` or `0x2A6E`), SIG aliases such as `environmental_sensing`, or full 128-bit UUIDs.
+- Each sensor mapping configures its label, type, unit, decimals, payload format, scale, offset, optional numeric min/max, access mode, byte order, and read interval.
+- Formats: UTF-8 numeric text; JSON with a dot-separated numeric field path (for example `sensors.temperature.value`); simple delimited CSV with a zero-based stored column (the UI displays 1-based columns); Bluetooth SIG temperature and humidity; and little-/big-endian signed/unsigned 16-/32-bit integers or 32-/64-bit IEEE floats.
+- Bluetooth SIG Environmental Sensing uses service `0x181A`, temperature `0x2A6E` and humidity `0x2A6F`. Temperature is signed int16 and humidity unsigned uint16; both decode little-endian in units of 0.01. The preset polls readable characteristics every 2 seconds. Change each mapping to notification mode only if that characteristic advertises notify/indicate.
+- `scale` and `offset` apply after format decoding: `displayed = decoded × scale + offset`. Optional bounds reject values outside a user-configured physical range. Confirm the units, byte order, mappings, and scaling against the actual firmware documentation before relying on values.
+- A notification mapping requires notify or indicate. A periodic-read mapping requires read. The selected mode is not silently replaced by the other mode.
+- JSON and CSV payloads must be valid UTF-8. CSV handling is intentionally a simple delimiter/column mapping, not a quoted multi-line CSV parser. Device-provided timestamps are not inferred; the browser records receive timestamps.
 
-ESP32 FIRMWARE SETUP
-1. In Arduino IDE Library Manager, install "Adafruit SHT4x Library" and its dependencies.
-2. Select an ESP32 board package with BLE support.
-3. Connect the SHT4x module using its compatible supply voltage: VIN to 3V3, GND to GND, SDA to GPIO26, and SCL to GPIO27.
-4. Open `ESP32_BLE_SHT4X.ino`, select the actual board and port, then upload.
-5. At 115200 baud, the current firmware reports `BLE ready: Ragi_Incubator`.
-6. This project has not verified the wiring or firmware against physical hardware. Confirm the board/module datasheets before connecting hardware.
+LIVE GRAPH, HISTORY, AND DEVICE MANAGEMENT
+- Sensor cards appear only for configured characteristics found on the connected device. The live graph plots actual received temperature and humidity samples on separate scales, with other profile types plotted when those standard types are absent.
+- Live graph ranges: 1 minute, 5 minutes, 30 minutes, 1 hour, and 24 hours. Pause affects drawing only; BLE reception continues. Clear graph hides older points in the current page view without deleting the saved CSV history.
+- No graph points are synthesized or interpolated. Long gaps are drawn as breaks. The 24-hour view only contains prior samples if logging was enabled and those real readings were stored.
+- Start logging to persist received readings locally; up to 5,000 samples per device are retained. The currently active device's history can be exported as CSV. Clearing browser data removes these records.
+- Saved BLE permission and profile details are local to the same browser profile. Reconnect is offered only when the browser still grants permission. Forgetting a saved device leaves its local reading history in place.
 
-DEPLOYMENT
-- GitHub Actions builds the Android debug APK and deploys the website/PWA to GitHub Pages on pushes to `main`.
+EXISTING ESP32 FIRMWARE EXAMPLE
+- `ESP32_BLE_SHT4X.ino` reads one Adafruit SHT4x sensor over I2C (SDA GPIO26, SCL GPIO27). It now exposes both the original NEXORA custom service (UTF-8 numeric notifications) and Bluetooth SIG Environmental Sensing service (two-byte little-endian notifications), preserving existing BLE clients. The original 128-bit service remains advertised; Web Bluetooth uses the user-driven all-device chooser and explicitly requests permission for the SIG service.
+- Arduino IDE: install Espressif ESP32 board support and the Adafruit SHT4x library/dependencies. Wire the module per its datasheet: VIN to a compatible 3V3 supply, GND to GND, SDA to GPIO26, and SCL to GPIO27. Select the actual ESP32 board/port and upload the `.ino`.
+- Existing custom UUIDs: service `7b7e0001-7d7a-4f4e-9b8d-2f8c4a6d1000`, temperature `7b7e0002-7d7a-4f4e-9b8d-2f8c4a6d1000`, humidity `7b7e0003-7d7a-4f4e-9b8d-2f8c4a6d1000`.
+- SIG UUIDs: service `181A`, temperature `2A6E`, humidity `2A6F`. The firmware obtains both values from the same SHT4x reading, serializes SIG values as signed/unsigned centi-units, and notifies only while a BLE client is connected.
+- This is a working source example, not a claim of physical verification. The project still implements only the SHT4x sensor; additional sensor drivers and different ESP32 GATT layouts must be implemented/configured by the device owner.
+
+TESTING
+- Protocol unit tests: from the project root run `node --test website/ble-protocol.test.js`.
+- Syntax checks: `node --check website/ble-protocol.js`, `node --check website/app.js`, and `node --check website/sw.js`.
+- No-device test: open the site, click Connect, and cancel the chooser. It must remain disconnected without showing readings.
+- Device/GATT tests require a compatible physical BLE sensor: select it; confirm GATT status, discovered UUID/property diagnostics, chosen read/notify readiness, and valid live telemetry separately.
+- Verify temperature/humidity byte decoding with the decoder tests; then compare actual sensor readings to a trusted local instrument. Pause/resume, clear graph, range selection, logging, CSV export, disconnect/stale state, and reconnect can be exercised on hardware.
+- Test browser permission revocation and absent service/characteristic mappings to confirm clear diagnostics. Browser automation cannot prove physical BLE radio behavior.
+- Android Chrome test for the website: install/open Chrome on a BLE-capable Android phone, open the HTTPS URL, grant Bluetooth/Nearby Devices permissions when prompted, then tap Connect and choose the device. Keep the tab/PWA open.
+- Windows test: use current Chrome or Edge on a BLE-capable Windows computer, open the HTTPS URL, enable Bluetooth in Windows, tap Connect, and select the BLE device. Browser support depends on OS drivers and permissions.
+- No physical ESP32, sensor, Android handset, or Windows BLE hardware verification is claimed until these steps have been performed on the user's actual devices.
+
+BUILD AND DEPLOY
+- GitHub Actions on pushes to `main` builds an Android debug APK from `RagiIncubatorAndroid-source.zip` and deploys the website/PWA to GitHub Pages.
 - Website: https://ravichandrasr091-ux.github.io/RagiIncubatorAndroid/
-- Android APK: https://ravichandrasr091-ux.github.io/RagiIncubatorAndroid/downloads/ragi-incubator.apk
-- Web Bluetooth requires HTTPS, a user gesture, and a compatible browser/device. Background Bluetooth is not supported.
-
-PROJECT LIMITATIONS
-- There is no backend, shared account, remote telemetry, cloud history, or cloud synchronization.
-- No heater, relay, fan, pump, motor, alarm, or other output is controlled by this monitoring application.
-- Web sensor-profile units are user-provided metadata; verify them against the firmware before relying on displayed labels.
-- No physical BLE, mobile installation, sensor-driver, reconnection, or safety hardware test should be considered passed unless separately performed on the actual device.
+- Android debug APK: https://ravichandrasr091-ux.github.io/RagiIncubatorAndroid/downloads/ragi-incubator.apk
+- A debug APK is for testing and is not a signed Play Store release. No release keystore/password is stored in this project.
