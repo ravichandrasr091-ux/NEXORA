@@ -1,66 +1,53 @@
-RAGI INCUBATOR ANDROID APP + ESP32 BLE FIRMWARE
+NEXORA — CONNECT. MONITOR. CONTROL.
 
-IMPORTANT
-- This project includes a native Android app, a browser BLE monitor/PWA, and ESP32 BLE firmware.
-- Only the existing SHT4x temperature/humidity sensor is implemented in firmware. Other sensor families in the project request are not implemented or hardware-tested.
-- BLE app and ESP32 firmware share these UUIDs. Do not change one side without changing the other.
-- GATT service: `7b7e0001-7d7a-4f4e-9b8d-2f8c4a6d1000`; temperature characteristic: `7b7e0002-7d7a-4f4e-9b8d-2f8c4a6d1000`; humidity characteristic: `7b7e0003-7d7a-4f4e-9b8d-2f8c4a6d1000`.
-- The existing BLE payload is a UTF-8 numeric string for temperature or relative humidity. It is not a versioned JSON protocol and currently offers no configuration or output-control characteristic.
-- Keep the app open while collecting readings. CSV rows are held in app memory until export; do not force-close before exporting.
-- The app monitors only. It does not switch the heater, regulate temperature, or provide an independent over-temperature cutoff.
-- No backend, account system, database, or cloud history is configured. Web and Android experiment logs are local to the current session.
-- The project has not been physically verified on an ESP32 or Android phone as part of this build.
-- The debug APK is intended for testing, not Play Store distribution. A release-signing key and protected signing configuration have not been supplied.
+PROJECT
+- NEXORA is the rebranded website/PWA and Android monitor in this project. The Android package ID remains unchanged so existing installs can update.
+- The site is a static HTML/CSS/JavaScript PWA. It connects directly to BLE devices; no account or cloud backend is required.
+- The supplied NEXORA artwork is used for the website/PWA and Android launcher icon.
+- No physical ESP32 or Android-device test is claimed by this build.
 
-ESP32 SETUP
-1. In Arduino IDE Library Manager install "Adafruit SHT4x Library" and its dependencies.
-2. Use ESP32 board package with BLE support (ESP32 Arduino core).
-3. Connect SHT4x: VIN->3V3, GND->GND, SDA->GPIO26, SCL->GPIO27.
-4. Open ESP32_BLE_SHT4X.ino, select your ESP32 board and port, then upload.
-5. Open Serial Monitor at 115200. It should say "BLE ready: Ragi_Incubator".
+WEB BLUETOOTH AND SENSOR PROFILES
+- Open the GitHub Pages website in a supported Web Bluetooth browser over HTTPS, then choose Connect device. The device chooser appears only after a user gesture.
+- The default profile preserves the existing ESP32 GATT service and SHT4x temperature/humidity characteristics below. The ESP32 firmware must advertise that service and send UTF-8 numeric readings.
+- In Sensor Management, configure one BLE service UUID and up to 16 characteristic UUIDs. Each characteristic must expose numeric UTF-8 data and support notifications/indications or reads. Names, types, units, and display precision are profile metadata saved only in this browser.
+- The web client does not discover physical I2C/SPI sensors, identify their models, parse arbitrary JSON, write to unknown characteristics, or control outputs. Sensor hardware must be read by ESP32 firmware and transmitted over BLE.
+- Existing firmware device name: `Ragi_Incubator`. Its BLE service and characteristics:
+  - Service: `7b7e0001-7d7a-4f4e-9b8d-2f8c4a6d1000`
+  - Temperature: `7b7e0002-7d7a-4f4e-9b8d-2f8c4a6d1000`
+  - Relative humidity: `7b7e0003-7d7a-4f4e-9b8d-2f8c4a6d1000`
+- The current firmware implements only an SHT4x temperature/humidity sensor on SDA GPIO26 and SCL GPIO27. Other sensor families, firmware metadata, uptime, BLE RSSI, and command acknowledgements are not provided.
+- Sensor values become stale after 8 seconds without a fresh reading and immediately show stale when disconnected. BLE link state is displayed separately from sensor freshness.
 
-ANDROID BUILD
-1. Install Android Studio and Android SDK Platform 35.
-2. Open the RagiIncubatorAndroid folder and let Gradle sync.
-3. Build -> Build Bundle(s) / APK(s) -> Build APK(s).
-4. The debug APK is app/build/outputs/apk/debug/app-debug.apk.
-5. Install it only for testing on an Android phone. Android may show a Play Protect warning for a sideloaded, debug-signed APK; do not disable Play Protect. Verify the source and build before installation.
-6. Open app, grant the requested Bluetooth permissions, enable Bluetooth, and tap Connect ESP32.
-7. Release signing has not been configured. Do not publish a release APK/AAB until the owner creates and securely stores a signing key and verifies its provenance.
+DATA, ANALYTICS, AND CONTROLS
+- Readings and connection history remain on this browser. Up to 5,000 logged samples per device are retained in browser storage; clearing browser data removes them.
+- Start logging while connected to persist actual incoming values. CSV export includes timestamp, device, sensor metadata, characteristic UUID, value, and configured unit.
+- Analytics filters 1 hour, 24 hours, 7 days, and 30 days of actual stored/session readings. No sample values are simulated or interpolated.
+- Web Bluetooth does not expose RSSI in this profile. Firmware version and device uptime are not reported by the current firmware; the interface labels them unavailable.
+- The firmware exposes no command/write characteristic. Controls are therefore unavailable; the site never reports an unimplemented device command as successful.
+- The service worker caches the NEXORA interface for offline viewing. Bluetooth still needs a supported browser, a secure context, user interaction, and an open page. The APK is not cached by the service worker.
 
-WINDOWS LAPTOP BUILD
-1. Install Python 3.10 or newer and make sure Bluetooth is enabled on the laptop.
-2. Open PowerShell in the RagiIncubatorAndroid folder.
-3. Run: `python -m pip install -r windows_app\requirements.txt`
-4. Build the Windows app: `python -m PyInstaller --onefile --windowed --name RagiIncubator windows_app\main.py`
-5. The standalone app is created at `dist\RagiIncubator.exe`. Copy it to the laptop and run it.
-6. Select Connect ESP32, allow Windows Bluetooth access if prompted, then start the experiment and export the CSV.
+ANDROID APP
+- The Android application is branded NEXORA and uses the supplied launcher icon while retaining its existing application ID and BLE service UUIDs.
+- Build with Android Studio, Android SDK Platform 35, and the project's Gradle configuration. The debug APK is produced at `app/build/outputs/apk/debug/app-debug.apk`.
+- The Android app currently connects to the existing service and its two temperature/humidity characteristics. The website's configurable multi-characteristic profiles do not automatically change Android's BLE profile.
+- This project has no release keystore or protected release-signing configuration. GitHub Actions publishes a debug APK for testing, not a Play Store release. Never disable Play Protect or share a release keystore/password in source control.
 
-WEB MONITOR AND PWA
-1. The browser connects directly to the ESP32 using Web Bluetooth; no application or cloud service is required.
-2. GitHub Actions builds the debug APK and deploys the website and PWA shell to GitHub Pages on pushes to main.
-3. Use Chrome or Edge on a BLE-capable device. Bluetooth requires a secure HTTPS origin and a user gesture; background Bluetooth is not supported.
-4. Select Connect ESP32 and choose the matching device in the browser's Bluetooth prompt.
-5. The Android APK download is at https://ravichandrasr091-ux.github.io/RagiIncubatorAndroid/downloads/ragi-incubator.apk. A debug APK can trigger Android's sideload/Play Protect warning; never bypass Play Protect.
-6. Install the web app using the browser's install option when offered. The service worker caches the monitor shell for offline viewing; it does not provide offline Bluetooth, background BLE, or cloud data synchronization.
-7. Start the experiment to record readings, then export them as CSV. Data is kept only in the open page session.
+ESP32 FIRMWARE SETUP
+1. In Arduino IDE Library Manager, install "Adafruit SHT4x Library" and its dependencies.
+2. Select an ESP32 board package with BLE support.
+3. Connect the SHT4x module using its compatible supply voltage: VIN to 3V3, GND to GND, SDA to GPIO26, and SCL to GPIO27.
+4. Open `ESP32_BLE_SHT4X.ino`, select the actual board and port, then upload.
+5. At 115200 baud, the current firmware reports `BLE ready: Ragi_Incubator`.
+6. This project has not verified the wiring or firmware against physical hardware. Confirm the board/module datasheets before connecting hardware.
 
-COMPATIBILITY
-- Android app requires BLE-capable Android phone.
-- Windows laptop app requires Windows 10/11 with Bluetooth Low Energy support.
-- Browser monitor requires Web Bluetooth support and a secure HTTPS connection.
-- The PWA caches the website shell for offline viewing; live sensor connections still require a supported browser and an active page.
-- This project uses Android Gradle Plugin 8.7.3, Kotlin 2.0.21, compile SDK 35.
-- If Android Studio suggests a Gradle/SDK update, accept compatible recommended updates.
+DEPLOYMENT
+- GitHub Actions builds the Android debug APK and deploys the website/PWA to GitHub Pages on pushes to `main`.
+- Website: https://ravichandrasr091-ux.github.io/RagiIncubatorAndroid/
+- Android APK: https://ravichandrasr091-ux.github.io/RagiIncubatorAndroid/downloads/ragi-incubator.apk
+- Web Bluetooth requires HTTPS, a user gesture, and a compatible browser/device. Background Bluetooth is not supported.
 
-NOTES
-- Temperature and humidity notifications are sent every 2 seconds.
-- Start experiment before readings are added to the CSV log.
-- Android CSV export uses the document picker; the Windows app saves to a selected CSV file.
-- Each CSV row represents a pair of temperature and humidity notifications from the ESP32.
-- This is a starter project. No physical hardware, multi-sensor combinations, reconnect reliability, release signing, or production safety behavior has been verified.
-
-NEXT HARDWARE CONFIGURATION
-- Before adding drivers, GPIO assignments, calibration, or outputs, document the exact ESP32 board/revision, installed sensors and module variants, bus addresses, voltage levels, wiring, and any relay/fan/pump driver boards.
-- PT100/PT1000, thermocouple, mains relay, motor and heater circuits require compatible interfaces and independently designed hardware safety limits; do not connect them directly to ESP32 GPIO.
-- Select a backend only if shared accounts/cloud history are required. No Supabase or other backend was found in the existing project.
+PROJECT LIMITATIONS
+- There is no backend, shared account, remote telemetry, cloud history, or cloud synchronization.
+- No heater, relay, fan, pump, motor, alarm, or other output is controlled by this monitoring application.
+- Web sensor-profile units are user-provided metadata; verify them against the firmware before relying on displayed labels.
+- No physical BLE, mobile installation, sensor-driver, reconnection, or safety hardware test should be considered passed unless separately performed on the actual device.
