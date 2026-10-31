@@ -51,7 +51,7 @@ jobs:
 
       - name: Prepare PWA and APK download
         run: |
-          cp website/index.html website/manifest.webmanifest website/sw.js website/icon.svg site/
+          cp website/index.html website/styles.css website/app.js website/manifest.webmanifest website/sw.js website/nexora-icon-192.png website/nexora-icon-512.png site/
 
       - name: Upload website artifact
         uses: actions/upload-pages-artifact@v3
@@ -61,7 +61,7 @@ jobs:
   deploy:
     environment:
       name: github-pages
-      url: https://ravichandrasr091-ux.github.io/RagiIncubatorAndroid/
+      url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     needs: build
     steps:
