@@ -1,0 +1,20 @@
+{
+  "id": "./",
+  "name": "Ragi Incubator · Live Monitor",
+  "short_name": "Ragi Monitor",
+  "description": "Monitor Ragi Incubator temperature and humidity over Bluetooth.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#101713",
+  "theme_color": "#101713",
+  "icons": [
+    {
+      "src": "./icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
