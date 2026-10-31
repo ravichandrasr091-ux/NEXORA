@@ -36,9 +36,10 @@ jobs:
           test -s website/downloads/nexora-android-v3.0.apk
           test -s website/downloads/nexora-android-v3.1.apk
           test -s website/downloads/nexora-android-v3.1.1.apk
+          test -s website/downloads/nexora-android-v3.2.apk
           mkdir -p site/downloads
           cp website/index.html website/styles.css website/ble-protocol.js website/app.js website/manifest.webmanifest website/sw.js website/nexora-icon-192.png website/nexora-icon-512.png site/
-          cp website/downloads/nexora-android-v2.0.apk website/downloads/nexora-android-v3.0.apk website/downloads/nexora-android-v3.1.apk website/downloads/nexora-android-v3.1.1.apk site/downloads/
+          cp website/downloads/nexora-android-v2.0.apk website/downloads/nexora-android-v3.0.apk website/downloads/nexora-android-v3.1.apk website/downloads/nexora-android-v3.1.1.apk website/downloads/nexora-android-v3.2.apk site/downloads/
 
       - name: Upload website artifact
         uses: actions/upload-pages-artifact@v3

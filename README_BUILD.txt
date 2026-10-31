@@ -7,7 +7,7 @@ PROJECT AND ARCHITECTURE
 - The website and PWA have no native Bluetooth Classic SPP access.
 
 ANDROID APPLICATION
-- Current app version: 3.1.1 (version code 5).
+- Current app version: 3.2 (version code 6).
 - Native Android destinations: Home, Devices, Analytics, and Settings. Device identity, BLE UUID profile, preferences, connection events, and up to 5,000 sensor samples are stored locally on the phone.
 - Bluetooth Classic uses Android RFCOMM with the standard SPP UUID `00001101-0000-1000-8000-00805F9B34FB`. Pair the ESP32 once in Android Bluetooth Settings, then select its paired entry once in NEXORA. With automatic reconnect enabled, the saved address is retried at launch/foreground and after brief connection failures (up to three retries per failure cycle).
 - Classic telemetry is parsed as independent UTF-8 lines such as `Temperature: 28.45 C`, `Humidity: 64.25 % RH`, and optionally `VOC raw: 12345`. Connection is not reported until the RFCOMM socket connects. Bluetooth Classic firmware must actually implement SPP and send these readings.
@@ -62,10 +62,11 @@ TESTING
 - No physical ESP32, sensor, Android handset, or Windows BLE hardware verification is claimed until these steps have been performed on the user's actual devices.
 
 BUILD AND DEPLOY
-- GitHub Actions on pushes to `main` validates and deploys the static website with separately downloadable Android 2.0, 3.0, 3.1, and 3.1.1 APKs. Downloads and installation are manual; Android asks for confirmation.
-- Android 3.1.1 loads saved sensor history off the UI thread, displays Home before asking for Bluetooth permission, and requests permission only when connecting.
-- The Android 2.0/3.0 APKs use certificate SHA-256 `c25c4d71123b7de2e7de0bb97800bd662800c0c5a570b82efadbe34401b3ee90`. Versions 3.1/3.1.1 use debug certificate SHA-256 `133af7ba25daf54321cf90ad94c3b706b2d8e6cf4bc91e3f4f032dcb47ed4296`; 3.1.1 can update 3.1, but not 2.0/3.0. Uninstalling those older installations removes local app data. A matching original signing keystore is required for a safe in-place update from 2.0/3.0.
+- GitHub Actions on pushes to `main` validates and deploys the static website with separately downloadable Android 2.0, 3.0, 3.1, 3.1.1, and 3.2 APKs. Downloads and installation are manual; Android asks for confirmation.
+- Android 3.2 uses a dark emerald dashboard, native temperature gauge, real-history charts and summaries, and grouped device/settings screens. It preserves saved sensor data and Bluetooth permissions/reconnect behavior from 3.1.1.
+- The Android 2.0/3.0 APKs use certificate SHA-256 `c25c4d71123b7de2e7de0bb97800bd662800c0c5a570b82efadbe34401b3ee90`. Versions 3.1/3.1.1/3.2 use debug certificate SHA-256 `133af7ba25daf54321cf90ad94c3b706b2d8e6cf4bc91e3f4f032dcb47ed4296`; 3.2 can update 3.1/3.1.1, but not 2.0/3.0. Uninstalling those older installations removes local app data. A matching original signing keystore is required for a safe in-place update from 2.0/3.0.
 - Website: https://ravichandrasr091-ux.github.io/NEXORA/
+- Android 3.2 APK: https://ravichandrasr091-ux.github.io/NEXORA/downloads/nexora-android-v3.2.apk
 - Android 3.1.1 APK: https://ravichandrasr091-ux.github.io/NEXORA/downloads/nexora-android-v3.1.1.apk
 - Android 3.1 APK: https://ravichandrasr091-ux.github.io/NEXORA/downloads/nexora-android-v3.1.apk
 - Android 3.0 APK: https://ravichandrasr091-ux.github.io/NEXORA/downloads/nexora-android-v3.0.apk
