@@ -8,13 +8,14 @@ PROJECT AND ARCHITECTURE
 
 ANDROID APPLICATIONS
 - Android 2.0 remains available as the legacy app at `website/downloads/nexora-android-v2.0.apk`; it is not overwritten or upgraded by Smart Chamber 2.1.
-- Smart Chamber 2.3 is a separate preview app using application ID `com.nexora.smartchamber`, version code 3, and version name `2.3`. It can coexist with V2.0; Android does not share either app's private database.
-- The V2.3 preview APK is debug-signed and debuggable, not a production release. The original V2.0 signing key was not found locally. A secure, backed-up release keystore must be provisioned before distributing a production release or promising future signed updates.
+- Smart Chamber 2.6 is an update to the existing preview application, retaining application ID `com.nexora.smartchamber` and incrementing to version code 6. It is not a new app package. Android 2.0 uses a different application ID and signing identity and is not updated by this APK.
+- The V2.6 APK retains the V2.5 debug signing certificate for upgrade compatibility. It is debuggable, not a production release. A private, backed-up release keystore is required before switching to production signing or publishing through an app store.
 - The V2.0 APK uses application ID `com.muted.ragiincubator`, version code 2, and its original debug signing certificate. Its settings and sensor history remain local to that app.
-- V2.3 provides Home, Monitor, History, Analytics, and Settings using Jetpack Compose and Room. BLE scans are filtered for the configured sensor service advertised by the ESP32. Live charts use a bounded in-memory stream of real BLE readings; historical graphs and CSV use locally stored sensor records.
-- The 1–100°C target control is a local draft with 0.5°C steps only. Apply remains locked unless ESP32 status reports verified heater readiness. The current firmware reports `HEATER_UNAVAILABLE` and rejects every setpoint; no target or heater state is fabricated.
-- V2.3 subscribes to the existing versioned BLE acknowledgement characteristic and only displays an acknowledged target as confirmed. No physical target-control operation can succeed with the current safe-disabled firmware.
-- Smart Chamber 2.3 runs as a foreground-only BLE client and supports the existing custom sensor UUIDs and the SIG Environmental Sensing service. BLE scanning requires a user action and Android Bluetooth permissions. Reconnection is attempted while the app is foregrounded; Android background execution is not claimed.
+- V2.6 provides Home, Monitor, History, Analytics, Settings, and an online update checker/downloader using GitHub Pages. Updates are checksum- and package/version-validated before Android's installer is opened.
+- Target selection is limited to 1–60°C in 0.5°C steps for the newer controller firmware, which reports its 65°C software over-temperature lockout. The target control remains in Celsius; the Celsius/Fahrenheit setting changes sensor displays only. The Android app supports both the legacy `NEXORA/1` controller and the newer target/status/acknowledgement characteristic layout. It displays reported heater and safety states and disables Apply for an explicit sensor error or safety lockout.
+- The updater was added in V2.6. V2.5 users need to install V2.6 once from the website; subsequent versions can be downloaded from Settings and installed with Android's confirmation.
+- The checked-in ESP32 sketch still reports `HEATER_UNAVAILABLE` and rejects every setpoint. It does not implement the newer target/status/acknowledgement characteristics; real target control therefore requires firmware that implements and validates that contract. No physical BLE/control test is claimed.
+- Smart Chamber 2.6 runs as a foreground-only BLE client and supports the existing custom sensor UUIDs and SIG Environmental Sensing (`181A`, `2A6E`, `2A6F`). BLE scanning requires a user action and Android Bluetooth permissions. Reconnection is attempted while the app is foregrounded; Android background execution is not claimed.
 - Live telemetry is marked stale after 15 seconds without a valid sensor message. Only real BLE readings are shown. Temperature is stored in Celsius and converted for Fahrenheit display.
 - Room history retains the most recent 30 days. To limit database growth, records are sampled at most once per sensor kind per minute, while the live display continues to update from BLE. CSV export uses Android's document picker.
 - The coordinated protocol and current safe-disabled ESP32 behavior are documented in `SMART_CHAMBER_BLE_PROTOCOL.md`. Existing temperature/humidity characteristics remain compatible. The ESP32 control service reports heater unavailable and rejects all setpoint writes.
@@ -66,12 +67,15 @@ TESTING
 - No physical ESP32, sensor, Android handset, or Windows BLE hardware verification is claimed until these steps have been performed on the user's actual devices.
 
 BUILD AND DEPLOY
-- GitHub Actions on pushes to `main` tests and deploys the static website with the preserved Android 2.0 APK and Smart Chamber 2.1/2.2 preview APKs.
+- GitHub Actions on pushes to `main` tests the website and update catalog, then deploys the static website and all APKs in `website/downloads`.
 - Website telemetry and target requests use direct browser BLE. Target apply remains locked by the current firmware's `HEATER_UNAVAILABLE` status. Wi-Fi forwarding requires a separately provisioned HTTPS API or MQTT-over-TLS backend, device identity/authentication, and private configuration; none is currently present.
 - Android 2.0 uses certificate SHA-256 `c25c4d71123b7de2e7de0bb97800bd662800c0c5a570b82efadbe34401b3ee90`. Android 3.x builds use different package identities and/or signing keys; they are not offered as updates.
 - Website: https://ravichandrasr091-ux.github.io/NEXORA/
 - Android 2.0 APK: https://ravichandrasr091-ux.github.io/NEXORA/downloads/nexora-android-v2.0.apk
 - Smart Chamber 2.3 preview APK: https://ravichandrasr091-ux.github.io/NEXORA/downloads/nexora-smart-chamber-v2.3.apk
+- Smart Chamber 2.4 preview APK: https://ravichandrasr091-ux.github.io/NEXORA/downloads/nexora-smart-chamber-v2.4.apk
+- Smart Chamber 2.5 update APK: https://ravichandrasr091-ux.github.io/NEXORA/downloads/nexora-smart-chamber-v2.5.apk
+- Smart Chamber 2.6 update APK: https://ravichandrasr091-ux.github.io/NEXORA/downloads/nexora-smart-chamber-v2.6.apk
 - Smart Chamber 2.2 preview APK: https://ravichandrasr091-ux.github.io/NEXORA/downloads/nexora-smart-chamber-v2.2.apk
 - Smart Chamber 2.1 previous preview APK: https://ravichandrasr091-ux.github.io/NEXORA/downloads/nexora-smart-chamber-v2.1.apk
 - A debug APK is for testing and is not a Play Store release.
