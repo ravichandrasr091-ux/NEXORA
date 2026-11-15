@@ -222,10 +222,10 @@
         <p class="section-copy" id="controller-description">Connect to the ESP32 to read its controller status. Target changes are only confirmed after an ESP32 acknowledgement.</p>
         <div class="control-target-row">
           <div class="target-confirmation"><span>ESP32-confirmed target</span><strong id="confirmed-target">—</strong></div>
-          <label class="field-label" for="target-entry">Requested target (°C)<input id="target-entry" type="number" min="1" max="100" step="0.5" value="40" inputmode="decimal"></label>
+          <label class="field-label" for="target-entry">Requested target (°C)<input id="target-entry" type="number" min="1" max="60" step="0.5" value="40" inputmode="decimal"></label>
         </div>
-        <label class="target-slider-label" for="target-slider">Draft target · 1°C to 100°C, 0.5°C steps</label>
-        <input id="target-slider" class="target-slider" type="range" min="1" max="100" step="0.5" value="40">
+        <label class="target-slider-label" for="target-slider">Draft target · 1°C to 60°C, 0.5°C steps</label>
+        <input id="target-slider" class="target-slider" type="range" min="1" max="60" step="0.5" value="40">
         <div class="target-actions">
           <button class="button button-outline" id="target-minus" type="button" aria-label="Decrease target by 0.5 degrees">−0.5°C</button>
           <button class="button button-outline" id="target-plus" type="button" aria-label="Increase target by 0.5 degrees">+0.5°C</button>
@@ -241,10 +241,24 @@
       <div class="app-banner-heading">
         <div class="eyebrow">NEXORA FOR ANDROID</div>
         <h2 id="android-downloads-title">NEXORA Smart Chamber</h2>
-        <p>Smart Chamber 2.5 updates the existing Smart Chamber preview app. Android 2.0 is a different app package and is unchanged. It adds support for ESP32 target/status/acknowledgement BLE characteristics and reports heater safety state from the controller.</p>
+        <p>Smart Chamber 2.6 updates the existing Smart Chamber preview app. It adds online in-app update checks and downloads, a 1–60°C target range, and support for the ESP32 target/status/acknowledgement BLE characteristics. Android 2.0 is a different app package and is unchanged.</p>
         <p>Android may ask you to confirm installation of an APK downloaded outside Google Play.</p>
       </div>
-      <div class="apk-version-list" aria-label="Available Android app versions">         <article class="apk-version">           <div class="apk-version-info">             <div class="apk-version-title"><strong>NEXORA Smart Chamber 2.5</strong><span class="apk-version-badge">UPDATE</span></div>             <p>Controller target read/write · live heater and safety status · acknowledged updates · 1–40°C in 0.5°C steps · requires ESP32 firmware with the new controller characteristics</p>           </div>           <a class="button button-primary" href="./downloads/nexora-smart-chamber-v2.5.apk" download="NEXORA-Smart-Chamber-v2.5.apk" aria-label="Download NEXORA Smart Chamber 2.5 update APK">Download Update APK <span aria-hidden="true">↗</span></a>         </article>
+      <div class="apk-version-list" aria-label="Available Android app versions">
+        <article class="apk-version">
+          <div class="apk-version-info">
+            <div class="apk-version-title"><strong>NEXORA Smart Chamber 2.6</strong><span class="apk-version-badge">UPDATE</span></div>
+            <p>Online in-app update check and installer handoff · 1–60°C in 0.5°C steps · 65°C firmware over-temperature lockout</p>
+          </div>
+          <a class="button button-primary" href="./downloads/nexora-smart-chamber-v2.6.apk" download="NEXORA-Smart-Chamber-v2.6.apk" aria-label="Download NEXORA Smart Chamber 2.6 update APK">Download Update APK <span aria-hidden="true">↗</span></a>
+        </article>
+        <article class="apk-version">
+          <div class="apk-version-info">
+            <div class="apk-version-title"><strong>NEXORA Smart Chamber 2.5</strong><span class="apk-version-badge">UPDATE</span></div>
+            <p>Controller target read/write · live heater and safety status · acknowledged updates · 1–40°C in 0.5°C steps · requires ESP32 firmware with the new controller characteristics</p>
+          </div>
+          <a class="button button-primary" href="./downloads/nexora-smart-chamber-v2.5.apk" download="NEXORA-Smart-Chamber-v2.5.apk" aria-label="Download NEXORA Smart Chamber 2.5 update APK">Download Update APK <span aria-hidden="true">↗</span></a>
+        </article>
         <article class="apk-version">
           <div class="apk-version-info">
             <div class="apk-version-title"><strong>NEXORA Smart Chamber 2.4</strong><span class="apk-version-badge">PREVIEW</span></div>

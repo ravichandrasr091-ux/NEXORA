@@ -95,8 +95,9 @@ test("parses controller status and acknowledgement without treating rejected tar
 
 test("encodes only valid half-degree setpoint requests", () => {
   assert.equal(encodeTargetCommand(65535, 40.5), "NEXORA/1|SET_TARGET|65535|405");
+  assert.equal(encodeTargetCommand(1, 60), "NEXORA/1|SET_TARGET|1|600");
   assert.throws(() => encodeTargetCommand(0, 40), /sequence/);
   assert.throws(() => encodeTargetCommand(1, 40.2), /0.5°C increments/);
-  assert.throws(() => encodeTargetCommand(1, 100.5), /1°C and 100°C/);
+  assert.throws(() => encodeTargetCommand(1, 60.5), /1°C and 60°C/);
   assert.throws(() => parseReading({ format: 1 }, text("4")), /format must be a string/);
 });

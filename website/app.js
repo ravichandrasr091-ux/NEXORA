@@ -1558,7 +1558,7 @@
   function setTargetDraft(value) {
     const numericValue = Number(value);
     if (!Number.isFinite(numericValue)) return;
-    const target = Math.round(Math.max(1, Math.min(100, numericValue)) * 2) / 2;
+    const target = Math.round(Math.max(1, Math.min(60, numericValue)) * 2) / 2;
     document.querySelector("#target-entry").value = target.toFixed(1);
     document.querySelector("#target-slider").value = String(target);
   }
@@ -1972,10 +1972,10 @@
     });
     document.querySelector("#target-entry").addEventListener("input", event => {
       const value = Number(event.currentTarget.value);
-      if (!Number.isFinite(value) || value < 1 || value > 100 ||
+      if (!Number.isFinite(value) || value < 1 || value > 60 ||
           Math.abs(value * 2 - Math.round(value * 2)) > 0.0001) {
         document.querySelector("#target-feedback").textContent =
-          "Enter a target from 1°C to 100°C in 0.5°C increments.";
+          "Enter a target from 1°C to 60°C in 0.5°C increments.";
         return;
       }
       document.querySelector("#target-slider").value = String(value);

@@ -1,6 +1,6 @@
 "use strict";
 
-const CACHE_NAME = "nexora-shell-v12";
+const CACHE_NAME = "nexora-shell-v13";
 const APP_SHELL = [
   "./",
   "./styles.css",
@@ -58,7 +58,7 @@ self.addEventListener("fetch", event => {
     return;
   }
 
-  if (/\/downloads\/[^/]+\.apk$/i.test(url.pathname)) return;
+  if (/\/downloads\/(?:[^/]+\.apk|latest\.json)$/i.test(url.pathname)) return;
   event.respondWith(
     caches.match(request).then(cached => cached || fetch(request))
   );

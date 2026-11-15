@@ -170,9 +170,9 @@
     if (!Number.isInteger(sequence) || sequence < 1 || sequence > 65535) {
       throw new Error("Command sequence must be between 1 and 65535.");
     }
-    if (!Number.isFinite(celsius) || celsius < 1 || celsius > 100 ||
+    if (!Number.isFinite(celsius) || celsius < 1 || celsius > 60 ||
         Math.abs(celsius * 2 - Math.round(celsius * 2)) > 0.0001) {
-      throw new Error("Target must be between 1°C and 100°C in 0.5°C increments.");
+      throw new Error("Target must be between 1°C and 60°C in 0.5°C increments.");
     }
     return `NEXORA/1|SET_TARGET|${sequence}|${Math.round(celsius * 10)}`;
   }
