@@ -20,7 +20,10 @@
     ]
   };
   const ENVIRONMENTAL_SERVICE_UUID = "0000181a-0000-1000-8000-00805f9b34fb";
-  const CONTROL_SERVICE_UUID = "7b7e0010-7d7a-4f4e-9b8d-2f8c4a6d1000";
+  const CONTROL_SERVICE_UUIDS = [
+    "7b6e0001-7c3a-4f8b-9d21-4a6e786f7261",
+    "7b7e0010-7d7a-4f4e-9b8d-2f8c4a6d1000"
+  ];
   const CONTROL_STATUS_UUID = "7b7e0012-7d7a-4f4e-9b8d-2f8c4a6d1000";
   const CONTROL_COMMAND_UUID = "7b7e0013-7d7a-4f4e-9b8d-2f8c4a6d1000";
   const CONTROL_ACK_UUID = "7b7e0014-7d7a-4f4e-9b8d-2f8c4a6d1000";
@@ -1397,6 +1400,37 @@
     return details;
   }
 
+  function compatibleSensorProfiles() {
+    return savedProfiles.filter(profile =>
+      window.NexoraBleProtocol.isProfileCompatible(profile, knownCharacteristics));
+  }
+
+  function selectDiscoveredSensorProfile() {
+    const compatible = compatibleSensorProfiles();
+    const selected = compatible.find(profile => profile.id === activeProfile.id) ||
+      compatible.find(profile => profile.id === SIG_ENVIRONMENTAL_PROFILE.id) ||
+      compatible.find(profile => profile.id === LEGACY_PROFILE.id) ||
+      compatible[0];
+    if (!selected) {
+      const services = knownServices.join(", ") || "<none>";
+      const reason = `Device rejected: no discovered GATT service contains both supported temperature and humidity characteristics with usable read/notify properties. Discovered services: ${services}.`;
+      throw new Error(reason);
+    }
+    if (selected.id !== activeProfile.id) {
+      const previousName = activeProfile.name;
+      activeProfile = selected;
+      writeStoredJson(ACTIVE_PROFILE_KEY, selected.id);
+      renderProfileSelector();
+      renderProfileForm();
+      renderSensors();
+      renderChartSensorOptions();
+      renderLiveGraph();
+      updateAnalytics();
+      console.info(`[NEXORA BLE] Using ${selected.name}; automatically selected instead of ${previousName}.`);
+    }
+    return selected;
+  }
+
   function listenToCharacteristic(characteristic, handler) {
     const previous = characteristicListeners.get(characteristic.uuid);
     if (previous) previous.characteristic.removeEventListener("characteristicvaluechanged", previous.handler);
@@ -1448,11 +1482,22 @@
     pendingTarget = null;
     confirmedTarget = null;
     try {
-      const service = await withTimeout(
-        server.getPrimaryService(CONTROL_SERVICE_UUID),
-        5000,
-        "Smart Chamber control service lookup"
-      );
+      let service = null;
+      let lookupError = null;
+      for (const serviceUuid of CONTROL_SERVICE_UUIDS) {
+        try {
+          service = await withTimeout(
+            server.getPrimaryService(serviceUuid),
+            5000,
+            "Smart Chamber control service lookup"
+          );
+          break;
+        } catch (error) {
+          lookupError = error;
+          if (error.name !== "NotFoundError") throw error;
+        }
+      }
+      if (!service) throw lookupError || new Error("No supported controller service was discovered.");
       controllerServiceAvailable = true;
       const statusCharacteristic = await service.getCharacteristic(CONTROL_STATUS_UUID).catch(() => null);
       const acknowledgementCharacteristic = await service.getCharacteristic(CONTROL_ACK_UUID).catch(() => null);
@@ -1591,17 +1636,35 @@
     document.querySelector("#packet-count").textContent = "0";
     document.querySelector("#reconnect-button").hidden = true;
     setDiagnostics([]);
+    let details = [];
+    console.info("[NEXORA BLE] Selected device", {
+      name: device.name || "<missing>",
+      browserDeviceId: device.id,
+      address: "Unavailable: Web Bluetooth does not expose BLE MAC addresses"
+    });
     try {
       if (!device.gatt) throw new Error("This Bluetooth device does not expose a GATT server.");
       const server = await withTimeout(device.gatt.connect(), 15000, "GATT connection");
       connectionPhase.gatt = true;
       updateConnectionUi();
-      setStatus(`GATT connected · discovering ${activeProfile.name} characteristics…`, "connected");
-      const details = await discoverGattCapabilities(server);
-      const service = await withTimeout(server.getPrimaryService(activeProfile.serviceUuid), 10000, "Configured GATT service lookup");
+      setStatus("GATT connected · discovering sensor characteristics…", "connected");
+      details = await discoverGattCapabilities(server);
+      details.unshift(
+        `Selected device name: ${device.name || "<missing>"}`,
+        `Browser device ID: ${device.id} (opaque identifier; MAC address is not exposed by Web Bluetooth).`,
+        "The browser does not expose raw advertisement or scan-response service lists; GATT services below are discovered after connection."
+      );
+      const sensorProfile = selectDiscoveredSensorProfile();
+      details.unshift(`Using sensor profile: ${sensorProfile.name} (${sensorProfile.serviceUuid}).`);
+      setDiagnostics(details);
+      const service = await withTimeout(
+        server.getPrimaryService(sensorProfile.serviceUuid),
+        10000,
+        `${sensorProfile.name} GATT service lookup`
+      );
       const available = [];
       const unavailable = [];
-      for (const sensor of activeProfile.sensors) {
+      for (const sensor of sensorProfile.sensors) {
         try {
           const characteristic = await withTimeout(service.getCharacteristic(sensor.characteristicUuid), 10000, `${sensor.name} characteristic lookup`);
           const supportsNotifications = characteristic.properties.notify || characteristic.properties.indicate;
@@ -1687,13 +1750,16 @@
       updateConnectionSteps();
       const capabilityCount = knownCharacteristics.length;
       setStatus(unavailable.length
-        ? `GATT connected · ${available.length}/${activeProfile.sensors.length} profile mappings ready; ${unavailable.length} unavailable.`
+        ? `GATT connected · ${available.length}/${sensorProfile.sensors.length} profile mappings ready; ${unavailable.length} unavailable.`
         : `GATT connected · ${capabilityCount} characteristic(s) discovered; waiting for valid telemetry.`,
       "connected");
       if (details.length && unavailable.length) setDiagnostics([...details, ...unavailable.map(message => `Profile mapping: ${message}`)]);
       await refreshAuthorizedDevices();
     } catch (error) {
       console.error("Bluetooth connection or GATT setup failed.", error);
+      if (String(error.message || "").startsWith("Device rejected:")) {
+        setDiagnostics([...details, error.message]);
+      }
       clearGattSubscriptions();
       if (device.gatt?.connected) device.gatt.disconnect();
       currentDevice = null;
@@ -1778,13 +1844,13 @@
     try {
       const device = await navigator.bluetooth.requestDevice({
         filters: [
-          { services: [activeProfile.serviceUuid] },
-          { namePrefix: "NEXORA" }
+          { services: [ENVIRONMENTAL_SERVICE_UUID] },
+          ...savedProfiles.map(profile => ({ services: [profile.serviceUuid] }))
         ],
         optionalServices: [...new Set([
           ...savedProfiles.map(profile => profile.serviceUuid),
           ENVIRONMENTAL_SERVICE_UUID,
-          CONTROL_SERVICE_UUID
+          ...CONTROL_SERVICE_UUIDS
         ])]
       });
       attachDisconnectHandler(device);

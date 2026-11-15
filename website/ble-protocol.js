@@ -25,6 +25,18 @@
     return UUID_PATTERN.test(normalizeUuid(value));
   }
 
+  function isProfileCompatible(profile, characteristics) {
+    if (!profile || !Array.isArray(profile.sensors) || !Array.isArray(characteristics)) return false;
+    return profile.sensors.every(sensor => {
+      const discovered = characteristics.find(item =>
+        item.serviceUuid === profile.serviceUuid && item.uuid === sensor.characteristicUuid);
+      if (!discovered || !Array.isArray(discovered.properties)) return false;
+      return sensor.mode === "read"
+        ? discovered.properties.includes("read")
+        : discovered.properties.includes("notify") || discovered.properties.includes("indicate");
+    });
+  }
+
   function bytesToText(dataView) {
     return textDecoder.decode(new Uint8Array(dataView.buffer, dataView.byteOffset, dataView.byteLength)).trim();
   }
@@ -168,6 +180,7 @@
   const api = Object.freeze({
     normalizeUuid,
     isValidUuid,
+    isProfileCompatible,
     parseReading,
     parseControllerStatus,
     parseControllerAcknowledgement,

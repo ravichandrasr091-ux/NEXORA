@@ -5,6 +5,7 @@ const assert = require("node:assert/strict");
 const {
   normalizeUuid,
   isValidUuid,
+  isProfileCompatible,
   parseReading,
   parseControllerStatus,
   parseControllerAcknowledgement,
@@ -25,6 +26,26 @@ test("normalizes Bluetooth SIG short UUIDs and aliases", () => {
   assert.equal(normalizeUuid("temperature"), "00002a6e-0000-1000-8000-00805f9b34fb");
   assert.equal(isValidUuid("2a6f"), true);
   assert.equal(isValidUuid("not-a-uuid"), false);
+});
+
+test("selects only sensor profiles whose required characteristics were discovered with usable access", () => {
+  const profile = {
+    serviceUuid: "0000181a-0000-1000-8000-00805f9b34fb",
+    sensors: [
+      { characteristicUuid: "00002a6e-0000-1000-8000-00805f9b34fb", mode: "read" },
+      { characteristicUuid: "00002a6f-0000-1000-8000-00805f9b34fb", mode: "read" }
+    ]
+  };
+  const characteristics = [
+    { serviceUuid: profile.serviceUuid, uuid: profile.sensors[0].characteristicUuid, properties: ["read"] },
+    { serviceUuid: profile.serviceUuid, uuid: profile.sensors[1].characteristicUuid, properties: ["read", "notify"] }
+  ];
+  assert.equal(isProfileCompatible(profile, characteristics), true);
+  assert.equal(isProfileCompatible(profile, characteristics.slice(0, 1)), false);
+  assert.equal(isProfileCompatible(profile, [
+    ...characteristics.slice(0, 1),
+    { ...characteristics[1], properties: ["write"] }
+  ]), false);
 });
 
 test("decodes signed SIG temperature and unsigned humidity in little-endian hundredths", () => {
