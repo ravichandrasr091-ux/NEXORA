@@ -140,7 +140,7 @@ h3 { margin: 8px 0 0; font-size: 18px; font-weight: 620; letter-spacing: -.02em;
 select, input { min-height: 39px; border: 1px solid #29383c; border-radius: 9px; padding: 0 11px; background: #0a1013; color: #e2ecea; font-size: 11px; }
 .analytics-panel { margin-top: 22px; padding: 17px 18px 12px; border: 1px solid #233136; border-radius: 16px; background: linear-gradient(150deg, #0d1518, #090e11); }
 .chart-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-.range-switch { display: inline-flex; gap: 4px; padding: 3px; border: 1px solid #1e2b30; border-radius: 9px; background: #080d10; }
+.range-switch { display: inline-flex; flex-wrap: wrap; gap: 4px; padding: 3px; border: 1px solid #1e2b30; border-radius: 9px; background: #080d10; }
 .range-button { min-width: 42px; min-height: 29px; border: 0; border-radius: 6px; background: transparent; color: #829195; cursor: pointer; font-size: 9px; font-weight: 720; }
 .range-button.is-active { background: #12392f; color: #80f3c8; }
 .live-range-button { min-width: 46px; min-height: 29px; padding: 0 7px; border: 0; border-radius: 6px; background: transparent; color: #829195; cursor: pointer; font-size: 9px; font-weight: 720; white-space: nowrap; }

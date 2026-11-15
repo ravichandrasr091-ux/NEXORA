@@ -44,12 +44,12 @@
       <div class="hero-copy">
         <div class="eyebrow"><span class="eyebrow-line"></span> CONNECT. MONITOR. CONTROL.</div>
         <h1>One Platform.<br><span>Every IoT Project.</span></h1>
-        <p>Connect your ESP32 devices, monitor live sensor data and control your IoT projects through one intelligent platform.</p>
+        <p>Connect compatible ESP32 devices directly over Bluetooth, monitor real sensor readings, and review history stored on this device.</p>
         <div class="hero-actions">
           <a class="button button-primary" href="#dashboard"><span class="button-pulse"></span>CONNECT DEVICE</a>
           <a class="button button-quiet" href="#platform">EXPLORE PLATFORM <span aria-hidden="true">↓</span></a>
         </div>
-        <div class="hero-proof"><span class="proof-dot"></span> Direct Bluetooth · No cloud required</div>
+        <div class="hero-proof"><span class="proof-dot"></span> Direct Web Bluetooth · Local history · No Wi-Fi backend</div>
       </div>
       <div class="signal-visual" id="platform" aria-label="Illustration of an ESP32 sending sensor data to a dashboard">
         <div class="visual-caption">DEVICE SIGNAL PATH <span>ILLUSTRATION · NOT LIVE DATA</span></div>
@@ -84,7 +84,7 @@
 
     <section class="section-wrap" id="dashboard">
       <div class="section-heading">
-        <div><div class="eyebrow">01 / DEVICE CONNECTION</div><h2>Live workspace</h2><p class="section-copy">A direct, local Bluetooth connection. Readings are shown only after the device sends them.</p></div>
+        <div><div class="eyebrow">01 / DEVICE CONNECTION</div><h2>Live workspace</h2><p class="section-copy">This static website connects directly to the ESP32 using Web Bluetooth. There is no Wi-Fi, MQTT, or cloud API backend configured; keep this HTTPS page open in a supported Chrome or Edge browser.</p></div>
         <div class="connection-badge"><span class="status-dot" id="status-dot"></span><span id="status" role="status" aria-live="polite">Ready to connect</span></div>
       </div>
       <div class="connect-panel">
@@ -129,11 +129,11 @@
       <div class="analytics-panel live-analytics">
         <div class="chart-toolbar">
           <div class="range-switch" id="live-range-switch" role="group" aria-label="Live graph time range">
+            <button class="live-range-button" data-range="30000" type="button">30 SEC</button>
             <button class="live-range-button is-active" data-range="60000" type="button">1 MIN</button>
             <button class="live-range-button" data-range="300000" type="button">5 MIN</button>
-            <button class="live-range-button" data-range="1800000" type="button">30 MIN</button>
+            <button class="live-range-button" data-range="900000" type="button">15 MIN</button>
             <button class="live-range-button" data-range="3600000" type="button">1 HOUR</button>
-            <button class="live-range-button" data-range="86400000" type="button">24 HOURS</button>
           </div>
           <div class="button-row chart-actions">
             <button class="button button-outline" id="pause-graph-button" type="button">Pause graph</button>
@@ -156,7 +156,7 @@
         </div>
       </div>
       <div class="analytics-panel">
-        <div class="chart-toolbar"><div class="range-switch" role="group" aria-label="History range"><button class="range-button" data-range="60000" type="button">1 MIN</button><button class="range-button" data-range="300000" type="button">5 MIN</button><button class="range-button" data-range="1800000" type="button">30 MIN</button><button class="range-button is-active" data-range="3600000" type="button">1 HOUR</button><button class="range-button" data-range="86400000" type="button">24 HOURS</button></div><span class="chart-range-label" id="chart-range-label">No readings in this range</span></div>
+        <div class="chart-toolbar"><div class="range-switch" role="group" aria-label="History range"><button class="range-button is-active" data-range="3600000" type="button">1 HOUR</button><button class="range-button" data-range="21600000" type="button">6 HOURS</button><button class="range-button" data-range="43200000" type="button">12 HOURS</button><button class="range-button" data-range="86400000" type="button">24 HOURS</button><button class="range-button" data-range="604800000" type="button">7 DAYS</button><button class="range-button" data-range="2592000000" type="button">30 DAYS</button></div><span class="chart-range-label" id="chart-range-label">No readings in this range</span></div>
         <div class="chart-wrap"><canvas id="chart" role="img" aria-label="Historical sensor readings chart"></canvas><div class="chart-empty" id="chart-empty">Real readings will appear here after logging starts.</div></div>
         <div class="chart-axis"><span id="chart-start">—</span><span>Recorded values · local history</span><span id="chart-end">—</span></div>
       </div>
@@ -222,16 +222,23 @@
       <div class="app-banner-heading">
         <div class="eyebrow">NEXORA FOR ANDROID</div>
         <h2 id="android-downloads-title">NEXORA Smart Chamber</h2>
-        <p>Smart Chamber 2.1 is a separate preview app and does not replace Android 2.0. Its heater controls remain disabled until the ESP32 output circuit and independent safety cutoff are verified.</p>
+        <p>Smart Chamber 2.2 is a separate preview app and does not replace Android 2.0. Heater output remains disabled until the ESP32 circuit and independent safety cutoff are verified.</p>
         <p>Android may ask you to confirm installation of an APK downloaded outside Google Play.</p>
       </div>
       <div class="apk-version-list" aria-label="Available Android app versions">
         <article class="apk-version">
           <div class="apk-version-info">
-            <div class="apk-version-title"><strong>NEXORA Smart Chamber 2.1</strong><span class="apk-version-badge">PREVIEW</span></div>
-            <p>Separate package · SHT4x BLE monitoring and local history · Debug-signed test build; not a production release</p>
+            <div class="apk-version-title"><strong>NEXORA Smart Chamber 2.2</strong><span class="apk-version-badge">PREVIEW</span></div>
+            <p>Separate package · BLE sensor monitoring, live graphs and local history · Debug-signed preview; target control is locked pending hardware verification</p>
           </div>
-          <a class="button button-primary" href="./downloads/nexora-smart-chamber-v2.1.apk" download="NEXORA-Smart-Chamber-v2.1.apk" aria-label="Download NEXORA Smart Chamber 2.1 preview APK">Download Preview APK <span aria-hidden="true">↗</span></a>
+          <a class="button button-primary" href="./downloads/nexora-smart-chamber-v2.2.apk" download="NEXORA-Smart-Chamber-v2.2.apk" aria-label="Download NEXORA Smart Chamber 2.2 preview APK">Download Preview APK <span aria-hidden="true">↗</span></a>
+        </article>
+        <article class="apk-version">
+          <div class="apk-version-info">
+            <div class="apk-version-title"><strong>NEXORA Smart Chamber 2.1</strong><span class="apk-version-badge apk-version-badge-older">PREVIOUS PREVIEW</span></div>
+            <p>Previous debug-signed BLE sensor monitoring build</p>
+          </div>
+          <a class="button button-quiet" href="./downloads/nexora-smart-chamber-v2.1.apk" download="NEXORA-Smart-Chamber-v2.1.apk" aria-label="Download NEXORA Smart Chamber 2.1 preview APK">Download APK <span aria-hidden="true">↗</span></a>
         </article>
         <article class="apk-version">
           <div class="apk-version-info">

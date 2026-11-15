@@ -422,29 +422,44 @@
       liveChartContext.lineWidth = 2;
       liveChartContext.lineJoin = "round";
       liveChartContext.lineCap = "round";
+      let segment = [];
+      const strokeSegment = points => {
+        if (!points.length) return;
+        liveChartContext.beginPath();
+        liveChartContext.moveTo(points[0].x, points[0].y);
+        for (let pointIndex = 1; pointIndex < points.length - 1; pointIndex++) {
+          const current = points[pointIndex];
+          const next = points[pointIndex + 1];
+          const middleX = (current.x + next.x) / 2;
+          const middleY = (current.y + next.y) / 2;
+          liveChartContext.quadraticCurveTo(current.x, current.y, middleX, middleY);
+        }
+        if (points.length > 1) {
+          const last = points[points.length - 1];
+          liveChartContext.lineTo(last.x, last.y);
+        }
+        liveChartContext.stroke();
+        points.forEach(point => {
+          liveChartContext.beginPath();
+          liveChartContext.arc(point.x, point.y, 2.2, 0, Math.PI * 2);
+          liveChartContext.fill();
+        });
+      };
       let previousTime = null;
-      let drawing = false;
       item.records.forEach(record => {
         const timestamp = Date.parse(record.timestamp);
         const point = {
           x: left + (timestamp - start) / liveRange * (right - left),
           y: bottom - (record.value - bounds.min) / span * (bottom - top)
         };
-        if (!drawing || previousTime === null || timestamp - previousTime > maxGap) {
-          liveChartContext.beginPath();
-          liveChartContext.moveTo(point.x, point.y);
-          drawing = true;
-        } else {
-          liveChartContext.lineTo(point.x, point.y);
-          liveChartContext.stroke();
-          liveChartContext.beginPath();
-          liveChartContext.moveTo(point.x, point.y);
+        if (previousTime !== null && timestamp - previousTime > maxGap) {
+          strokeSegment(segment);
+          segment = [];
         }
-        liveChartContext.beginPath();
-        liveChartContext.arc(point.x, point.y, 2.7, 0, Math.PI * 2);
-        liveChartContext.fill();
+        segment.push(point);
         previousTime = timestamp;
       });
+      strokeSegment(segment);
     });
     const labels = [start, start + liveRange / 2, now].map(timestamp =>
       new Date(timestamp).toLocaleTimeString([], liveRange >= 86400000 ? { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" } : { hour: "2-digit", minute: "2-digit", second: "2-digit" }));
@@ -967,8 +982,8 @@
         Date.parse(record.timestamp) <= now)
       : [];
     const rangeLabels = new Map([
-      [60000, "1 minute"], [300000, "5 minutes"], [1800000, "30 minutes"],
-      [3600000, "1 hour"], [86400000, "24 hours"]
+      [3600000, "1 hour"], [21600000, "6 hours"], [43200000, "12 hours"],
+      [86400000, "24 hours"], [604800000, "7 days"], [2592000000, "30 days"]
     ]);
     const label = rangeLabels.get(selectedRange) || "selected range";
     document.querySelector("#chart-range-label").textContent =
@@ -1035,19 +1050,49 @@
       const y = top + index * (bottom - top) / 2;
       chartContext.fillText(value.toFixed(2), left - 8, y);
     });
-    const points = records.map((record, index) => ({
-      x: records.length === 1 ? (left + right) / 2 : left + index * (right - left) / (records.length - 1),
-      y: bottom - (record.value - minimum) / span * (bottom - top)
-    }));
-    chartContext.beginPath();
-    points.forEach((point, index) => index === 0 ? chartContext.moveTo(point.x, point.y) : chartContext.lineTo(point.x, point.y));
+    const now = Date.now();
+    const start = now - selectedRange;
+    const sensor = selectedSensor();
+    const maxGap = Math.max(STALE_AFTER_MS * 3, Number(sensor?.readIntervalMs || 2000) * 2.5);
+    const segments = [];
+    let segment = [];
+    let previousTimestamp = null;
+    records.forEach(record => {
+      const timestamp = Date.parse(record.timestamp);
+      if (previousTimestamp !== null && timestamp - previousTimestamp > maxGap) {
+        segments.push(segment);
+        segment = [];
+      }
+      segment.push({
+        x: left + (timestamp - start) / selectedRange * (right - left),
+        y: bottom - (record.value - minimum) / span * (bottom - top)
+      });
+      previousTimestamp = timestamp;
+    });
+    if (segment.length) segments.push(segment);
     chartContext.strokeStyle = "#35e7b0";
     chartContext.lineWidth = 2;
     chartContext.lineJoin = "round";
     chartContext.lineCap = "round";
-    chartContext.stroke();
+    segments.forEach(points => {
+      if (!points.length) return;
+      chartContext.beginPath();
+      chartContext.moveTo(points[0].x, points[0].y);
+      for (let pointIndex = 1; pointIndex < points.length - 1; pointIndex++) {
+        const current = points[pointIndex];
+        const next = points[pointIndex + 1];
+        chartContext.quadraticCurveTo(
+          current.x,
+          current.y,
+          (current.x + next.x) / 2,
+          (current.y + next.y) / 2
+        );
+      }
+      if (points.length > 1) chartContext.lineTo(points[points.length - 1].x, points[points.length - 1].y);
+      chartContext.stroke();
+    });
     chartContext.fillStyle = "#31e4aa";
-    points.forEach(point => {
+    segments.flat().forEach(point => {
       chartContext.beginPath();
       chartContext.arc(point.x, point.y, 2.5, 0, Math.PI * 2);
       chartContext.fill();
