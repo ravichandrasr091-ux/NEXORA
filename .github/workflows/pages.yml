@@ -36,10 +36,10 @@ jobs:
           test -s website/downloads/nexora-smart-chamber-v2.1.apk
           test -s website/downloads/nexora-smart-chamber-v2.2.apk
           test -s website/downloads/nexora-smart-chamber-v2.3.apk
-          test -s website/downloads/nexora-smart-chamber-v2.4.apk
+          test -s website/downloads/nexora-smart-chamber-v2.4.apk && test -s website/downloads/nexora-smart-chamber-v2.5.apk
           mkdir -p site/downloads
           cp website/index.html website/styles.css website/ble-protocol.js website/app.js website/manifest.webmanifest website/sw.js website/nexora-icon-192.png website/nexora-icon-512.png site/
-          cp website/downloads/nexora-android-v2.0.apk website/downloads/nexora-smart-chamber-v2.1.apk website/downloads/nexora-smart-chamber-v2.2.apk website/downloads/nexora-smart-chamber-v2.3.apk website/downloads/nexora-smart-chamber-v2.4.apk site/downloads/
+          cp website/downloads/nexora-android-v2.0.apk website/downloads/nexora-smart-chamber-v2.1.apk website/downloads/nexora-smart-chamber-v2.2.apk website/downloads/nexora-smart-chamber-v2.3.apk website/downloads/nexora-smart-chamber-v2.4.apk website/downloads/nexora-smart-chamber-v2.5.apk site/downloads/
 
       - name: Upload website artifact
         uses: actions/upload-pages-artifact@v3
