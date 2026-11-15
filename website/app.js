@@ -19,6 +19,11 @@
       { name: "Relative humidity", type: "Humidity", characteristicUuid: "00002a6f-0000-1000-8000-00805f9b34fb", unit: "% RH", precision: 2, format: "sig-humidity", scale: 1, offset: 0, mode: "read" }
     ]
   };
+  const ENVIRONMENTAL_SERVICE_UUID = "0000181a-0000-1000-8000-00805f9b34fb";
+  const CONTROL_SERVICE_UUID = "7b7e0010-7d7a-4f4e-9b8d-2f8c4a6d1000";
+  const CONTROL_STATUS_UUID = "7b7e0012-7d7a-4f4e-9b8d-2f8c4a6d1000";
+  const CONTROL_COMMAND_UUID = "7b7e0013-7d7a-4f4e-9b8d-2f8c4a6d1000";
+  const CONTROL_ACK_UUID = "7b7e0014-7d7a-4f4e-9b8d-2f8c4a6d1000";
   const LEGACY_PROFILE_KEY = "nexora.gatt-profile.v1";
   const PROFILES_KEY = "nexora.gatt-profiles.v2";
   const ACTIVE_PROFILE_KEY = "nexora.active-profile.v2";
@@ -63,6 +68,13 @@
   let historyDeviceId = null;
   let connectionPhase = { discovered: false, gatt: false, characteristics: false, notifications: false };
   let activeSensors = [];
+  let controllerStatus = null;
+  let controllerServiceAvailable = false;
+  let commandCharacteristic = null;
+  let pendingTarget = null;
+  let confirmedTarget = null;
+  let nextTargetSequence = 1;
+  let targetAckTimeout = null;
   let busy = false;
   let logging = false;
   let packetCount = 0;
@@ -258,15 +270,51 @@
     document.querySelector("#connection-title").textContent =
       connected ? currentDevice.name || "ESP32 device" : busy ? "Connecting to device…" : "No device connected";
     document.querySelector("#connection-description").textContent =
-      connected ? "Bluetooth is connected. Sensor freshness is tracked separately below." :
-        "Choose a compatible BLE device to begin receiving telemetry.";
+      connected ? "Bluetooth is connected. Internet access is not needed for this local BLE link; sensor freshness is tracked below." :
+        "Power the ESP32, tap Connect device, and choose NEXORA-SENSOR. Local BLE does not require Wi-Fi; keep this page open.";
     document.querySelector("#overview-device").textContent = connected ? currentDevice.name || "ESP32 device" : "Not connected";
     document.querySelector("#overview-link").textContent = connected ? "Connected" : "Disconnected";
     experimentButton.disabled = !connected && !logging;
     const savedDeviceCount = readStoredJson(DEVICE_HISTORY_KEY, []);
     document.querySelector("#history-device-select").disabled =
       connected || !Array.isArray(savedDeviceCount) || savedDeviceCount.length <= 1;
+    updateControllerUi();
     updateSensorHealth();
+  }
+
+  function updateControllerUi() {
+    const connected = isConnected();
+    const ready = connected && controllerServiceAvailable && controllerStatus?.heaterState === "HEATER_READY" &&
+      controllerStatus.sensorState === "SENSOR_OK" && commandCharacteristic;
+    document.querySelector("#controller-state").textContent = !connected
+      ? "Not connected"
+      : !controllerServiceAvailable
+        ? "No controller service"
+        : controllerStatus?.heaterState || "Checking controller";
+    document.querySelector("#controller-description").textContent = !connected
+      ? "Connect to the ESP32 over BLE to read controller status and telemetry."
+      : !controllerServiceAvailable
+        ? "This device does not expose the NEXORA Smart Chamber control service."
+        : controllerStatus?.heaterState === "HEATER_UNAVAILABLE"
+          ? "ESP32 reports HEATER_UNAVAILABLE. Target requests are blocked until verified heater hardware and independent thermal protection are commissioned."
+          : controllerStatus?.sensorState === "SENSOR_FAULT"
+            ? "ESP32 reports a sensor fault. Temperature control is unavailable."
+            : ready
+              ? "ESP32 reports the controller ready. Changes are applied only after a matching ESP32 acknowledgement."
+              : "Waiting for a valid ESP32 controller status. Target control remains locked.";
+    document.querySelector("#confirmed-target").textContent =
+      confirmedTarget === null ? "—" : `${confirmedTarget.toFixed(1)}°C`;
+    document.querySelector("#apply-target").disabled = !ready || Boolean(pendingTarget);
+    if (!connected) {
+      document.querySelector("#target-feedback").textContent = "No target has been confirmed by the ESP32.";
+    } else if (!controllerServiceAvailable) {
+      document.querySelector("#target-feedback").textContent = "The connected device does not expose the Smart Chamber command service.";
+    } else if (!ready && !pendingTarget) {
+      document.querySelector("#target-feedback").textContent =
+        controllerStatus?.heaterState === "HEATER_UNAVAILABLE"
+          ? "Target draft only · ESP32 rejects commands while heater output is unavailable."
+          : "Target draft only · waiting for verified ESP32 heater readiness.";
+    }
   }
 
   function updateConnectionSteps() {
@@ -1349,6 +1397,172 @@
     return details;
   }
 
+  function listenToCharacteristic(characteristic, handler) {
+    const previous = characteristicListeners.get(characteristic.uuid);
+    if (previous) previous.characteristic.removeEventListener("characteristicvaluechanged", previous.handler);
+    characteristic.addEventListener("characteristicvaluechanged", handler);
+    characteristicListeners.set(characteristic.uuid, { characteristic, handler });
+  }
+
+  function handleControllerStatus(value) {
+    try {
+      controllerStatus = window.NexoraBleProtocol.parseControllerStatus(value);
+      updateControllerUi();
+    } catch (error) {
+      console.error("ESP32 controller status could not be decoded.", error);
+      document.querySelector("#controller-state").textContent = "Invalid status";
+      document.querySelector("#controller-description").textContent = error.message;
+      document.querySelector("#apply-target").disabled = true;
+    }
+  }
+
+  function handleControllerAcknowledgement(value) {
+    try {
+      const acknowledgement = window.NexoraBleProtocol.parseControllerAcknowledgement(value);
+      if (!acknowledgement.sequence || acknowledgement.sequence !== pendingTarget?.sequence) return;
+      window.clearTimeout(targetAckTimeout);
+      targetAckTimeout = null;
+      const requested = pendingTarget.celsius;
+      pendingTarget = null;
+      if (acknowledgement.result === "ACCEPTED" &&
+          controllerStatus?.heaterState === "HEATER_READY" &&
+          controllerStatus.sensorState === "SENSOR_OK") {
+        confirmedTarget = requested;
+        document.querySelector("#target-feedback").textContent =
+          `ESP32 confirmed ${requested.toFixed(1)}°C.`;
+      } else {
+        document.querySelector("#target-feedback").textContent =
+          `ESP32 ${acknowledgement.result.toLowerCase()} target: ${acknowledgement.reason}. Previous confirmed target is unchanged.`;
+      }
+      updateControllerUi();
+    } catch (error) {
+      console.error("ESP32 command acknowledgement could not be decoded.", error);
+      document.querySelector("#target-feedback").textContent = `Invalid ESP32 acknowledgement: ${error.message}`;
+    }
+  }
+
+  async function configureController(server) {
+    controllerStatus = null;
+    controllerServiceAvailable = false;
+    commandCharacteristic = null;
+    pendingTarget = null;
+    confirmedTarget = null;
+    try {
+      const service = await withTimeout(
+        server.getPrimaryService(CONTROL_SERVICE_UUID),
+        5000,
+        "Smart Chamber control service lookup"
+      );
+      controllerServiceAvailable = true;
+      const statusCharacteristic = await service.getCharacteristic(CONTROL_STATUS_UUID).catch(() => null);
+      const acknowledgementCharacteristic = await service.getCharacteristic(CONTROL_ACK_UUID).catch(() => null);
+      commandCharacteristic = await service.getCharacteristic(CONTROL_COMMAND_UUID)
+        .then(characteristic => characteristic.properties.write || characteristic.properties.writeWithoutResponse
+          ? characteristic
+          : null)
+        .catch(() => null);
+
+      if (statusCharacteristic) {
+        const statusHandler = event => handleControllerStatus(event.target.value);
+        const properties = statusCharacteristic.properties;
+        if (properties.notify || properties.indicate) {
+          listenToCharacteristic(statusCharacteristic, statusHandler);
+          await withTimeout(statusCharacteristic.startNotifications(), 10000, "Controller status notifications")
+            .catch(error => {
+              const listener = characteristicListeners.get(statusCharacteristic.uuid);
+              if (listener) statusCharacteristic.removeEventListener("characteristicvaluechanged", listener.handler);
+              characteristicListeners.delete(statusCharacteristic.uuid);
+              throw error;
+            });
+        }
+        if (properties.read) {
+          const value = await withTimeout(statusCharacteristic.readValue(), 10000, "Controller status read");
+          handleControllerStatus(value);
+        }
+      }
+
+      if (acknowledgementCharacteristic) {
+        const acknowledgementHandler = event => handleControllerAcknowledgement(event.target.value);
+        const properties = acknowledgementCharacteristic.properties;
+        if (properties.notify || properties.indicate) {
+          listenToCharacteristic(acknowledgementCharacteristic, acknowledgementHandler);
+          await withTimeout(acknowledgementCharacteristic.startNotifications(), 10000, "Target acknowledgement notifications")
+            .catch(error => {
+              const listener = characteristicListeners.get(acknowledgementCharacteristic.uuid);
+              if (listener) acknowledgementCharacteristic.removeEventListener("characteristicvaluechanged", listener.handler);
+              characteristicListeners.delete(acknowledgementCharacteristic.uuid);
+              throw error;
+            });
+        }
+        if (properties.read) {
+          const value = await withTimeout(acknowledgementCharacteristic.readValue(), 10000, "Target acknowledgement read");
+          handleControllerAcknowledgement(value);
+        }
+      }
+    } catch (error) {
+      if (error.name !== "NotFoundError") {
+        console.error("Smart Chamber control service could not be configured.", error);
+        setDiagnostics([...knownServices.map(uuid => `Service ${uuid}`), `Controller setup: ${error.message || error.name}`]);
+      }
+      controllerServiceAvailable = false;
+      commandCharacteristic = null;
+    }
+    updateControllerUi();
+  }
+
+  function setTargetDraft(value) {
+    const numericValue = Number(value);
+    if (!Number.isFinite(numericValue)) return;
+    const target = Math.round(Math.max(1, Math.min(100, numericValue)) * 2) / 2;
+    document.querySelector("#target-entry").value = target.toFixed(1);
+    document.querySelector("#target-slider").value = String(target);
+  }
+
+  async function applyTarget() {
+    const celsius = Number(document.querySelector("#target-entry").value);
+    let payload;
+    try {
+      payload = window.NexoraBleProtocol.encodeTargetCommand(nextTargetSequence, celsius);
+    } catch (error) {
+      document.querySelector("#target-feedback").textContent = error.message;
+      return;
+    }
+    if (!isConnected() || !commandCharacteristic ||
+        controllerStatus?.heaterState !== "HEATER_READY" ||
+        controllerStatus.sensorState !== "SENSOR_OK") {
+      updateControllerUi();
+      return;
+    }
+
+    const sequence = nextTargetSequence;
+    nextTargetSequence = nextTargetSequence === 65535 ? 1 : nextTargetSequence + 1;
+    pendingTarget = { sequence, celsius };
+    document.querySelector("#target-feedback").textContent =
+      `Sent ${celsius.toFixed(1)}°C request · waiting for ESP32 acknowledgement…`;
+    updateControllerUi();
+    try {
+      const bytes = new TextEncoder().encode(payload);
+      if (typeof commandCharacteristic.writeValueWithResponse === "function") {
+        await withTimeout(commandCharacteristic.writeValueWithResponse(bytes), 10000, "ESP32 target write");
+      } else {
+        await withTimeout(commandCharacteristic.writeValue(bytes), 10000, "ESP32 target write");
+      }
+      targetAckTimeout = window.setTimeout(() => {
+        if (pendingTarget?.sequence !== sequence) return;
+        pendingTarget = null;
+        document.querySelector("#target-feedback").textContent =
+          "No ESP32 acknowledgement received. Previous confirmed target is unchanged.";
+        updateControllerUi();
+      }, 10000);
+    } catch (error) {
+      pendingTarget = null;
+      document.querySelector("#target-feedback").textContent =
+        `Could not send target to the ESP32: ${error.message || error.name}`;
+      setStatus(`Target write failed: ${error.message || error.name}`, "error");
+      updateControllerUi();
+    }
+  }
+
   async function connectDevice(device) {
     if (busy) return;
     flushDeviceRecords();
@@ -1455,6 +1669,7 @@
         throw new Error(unavailable.join(" · ") || "No configured sensor characteristics were available.");
       }
       activeSensors = available;
+      await configureController(server);
       connectionPhase.characteristics = true;
       connectionPhase.notifications = available.length > 0;
       rememberDevice(device);
@@ -1518,6 +1733,13 @@
   function clearGattSubscriptions() {
     readTimers.forEach(timer => window.clearInterval(timer));
     readTimers.clear();
+    window.clearTimeout(targetAckTimeout);
+    targetAckTimeout = null;
+    controllerStatus = null;
+    controllerServiceAvailable = false;
+    commandCharacteristic = null;
+    pendingTarget = null;
+    confirmedTarget = null;
     flushDeviceRecords();
     characteristicListeners.forEach(({ characteristic, handler }) => {
       characteristic.removeEventListener("characteristicvaluechanged", handler);
@@ -1555,10 +1777,14 @@
     updateConnectionUi();
     try {
       const device = await navigator.bluetooth.requestDevice({
-        acceptAllDevices: true,
+        filters: [
+          { services: [activeProfile.serviceUuid] },
+          { namePrefix: "NEXORA" }
+        ],
         optionalServices: [...new Set([
           ...savedProfiles.map(profile => profile.serviceUuid),
-          "0000181a-0000-1000-8000-00805f9b34fb"
+          ENVIRONMENTAL_SERVICE_UUID,
+          CONTROL_SERVICE_UUID
         ])]
       });
       attachDisconnectHandler(device);
@@ -1675,6 +1901,26 @@
 
   function bindEvents() {
     connectButton.addEventListener("click", toggleConnection);
+    document.querySelector("#target-slider").addEventListener("input", event => {
+      setTargetDraft(event.currentTarget.value);
+    });
+    document.querySelector("#target-entry").addEventListener("input", event => {
+      const value = Number(event.currentTarget.value);
+      if (!Number.isFinite(value) || value < 1 || value > 100 ||
+          Math.abs(value * 2 - Math.round(value * 2)) > 0.0001) {
+        document.querySelector("#target-feedback").textContent =
+          "Enter a target from 1°C to 100°C in 0.5°C increments.";
+        return;
+      }
+      document.querySelector("#target-slider").value = String(value);
+    });
+    document.querySelector("#target-minus").addEventListener("click", () => {
+      setTargetDraft(Number(document.querySelector("#target-entry").value) - 0.5);
+    });
+    document.querySelector("#target-plus").addEventListener("click", () => {
+      setTargetDraft(Number(document.querySelector("#target-entry").value) + 0.5);
+    });
+    document.querySelector("#apply-target").addEventListener("click", applyTarget);
     experimentButton.addEventListener("click", toggleLogging);
     exportButton.addEventListener("click", exportCsv);
     profileForm.addEventListener("submit", saveProfile);
@@ -1773,7 +2019,7 @@
         setStatus(`Could not start installation: ${error.message || error.name}`, "error");
       }
     });
-    window.addEventListener("offline", () => setStatus("Offline · cached interface is available; live Bluetooth needs this page open.", isConnected() ? "connected" : ""));
+    window.addEventListener("offline", () => setStatus("Internet offline · local BLE can still connect; keep this page open and connect to the ESP32.", isConnected() ? "connected" : ""));
     window.addEventListener("online", () => {
       if (!isConnected()) setStatus("Online · ready to connect");
     });

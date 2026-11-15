@@ -204,7 +204,7 @@
           </div>
           <div class="profile-presets"><button class="button button-outline" id="sig-profile-button" type="button">Use Bluetooth SIG Environmental Sensing</button><button class="button button-outline" id="legacy-profile-button" type="button">Use existing ESP32 profile</button></div>
           <label class="field-label" for="service-uuid">GATT service UUID<input id="service-uuid" name="serviceUuid" autocomplete="off" spellcheck="false" required></label>
-          <div class="profile-hint">Enter a 16-bit SIG UUID (such as 181A), a Bluetooth SIG alias (environmental_sensing), or a full 128-bit UUID. Configure a format and read/notify mode per characteristic.</div>
+          <div class="profile-hint">Enter a 16-bit SIG UUID (such as 181A), a Bluetooth SIG alias (environmental_sensing), or a full 128-bit UUID. Configure a format and read/notify mode per characteristic. Smart Chamber commands use the versioned control service; Apply stays locked unless the ESP32 reports HEATER_READY.</div>
           <div id="profile-sensors" class="profile-sensors"></div>
           <div class="profile-actions"><button class="button button-outline" id="add-sensor-button" type="button">Add sensor</button><button class="button button-primary" type="submit">Save profile</button><button class="button button-quiet" id="reset-profile-button" type="button">Restore default</button></div>
           <p class="fine-print">Available services and characteristics are enumerated only after the device grants GATT access. Sensor hardware must be read by device firmware and transmitted over BLE. NEXORA does not infer a sensor model or send control commands.</p>
@@ -214,7 +214,26 @@
 
     <section class="section-wrap section-divider" id="settings">
       <div class="section-heading"><div><div class="eyebrow">06 / SETTINGS AND COMPATIBILITY</div><h2>Local by design</h2><p class="section-copy">Configure profiles locally and inspect real device capabilities before relying on telemetry.</p></div></div>
-      <div class="control-state"><span class="control-lock" aria-hidden="true">⌑</span><div><strong id="controls-title">No supported controls reported</strong><p id="controls-description">The current ESP32 profile exposes read/notify sensor characteristics only. No writable command or acknowledgement characteristic is configured, so output controls are unavailable.</p></div><span class="control-tag">READ-ONLY PROFILE</span></div>
+      <div class="control-panel">
+        <div class="control-panel-heading">
+          <div><div class="eyebrow">ESP32-AUTHORITATIVE CONTROL</div><h3>Temperature target</h3></div>
+          <span class="control-tag" id="controller-state">Not connected</span>
+        </div>
+        <p class="section-copy" id="controller-description">Connect to the ESP32 to read its controller status. Target changes are only confirmed after an ESP32 acknowledgement.</p>
+        <div class="control-target-row">
+          <div class="target-confirmation"><span>ESP32-confirmed target</span><strong id="confirmed-target">—</strong></div>
+          <label class="field-label" for="target-entry">Requested target (°C)<input id="target-entry" type="number" min="1" max="100" step="0.5" value="40" inputmode="decimal"></label>
+        </div>
+        <label class="target-slider-label" for="target-slider">Draft target · 1°C to 100°C, 0.5°C steps</label>
+        <input id="target-slider" class="target-slider" type="range" min="1" max="100" step="0.5" value="40">
+        <div class="target-actions">
+          <button class="button button-outline" id="target-minus" type="button" aria-label="Decrease target by 0.5 degrees">−0.5°C</button>
+          <button class="button button-outline" id="target-plus" type="button" aria-label="Increase target by 0.5 degrees">+0.5°C</button>
+          <button class="button button-primary" id="apply-target" type="button" disabled>Apply target</button>
+        </div>
+        <p class="target-feedback" id="target-feedback" role="status" aria-live="polite">No target has been confirmed by the ESP32.</p>
+        <p class="safety-note">The current firmware reports HEATER_UNAVAILABLE and rejects all target commands. Heater output stays disabled until the switching hardware and independent over-temperature protection are verified.</p>
+      </div>
       <div class="browser-limitations"><strong>Browser Bluetooth limitations</strong><p>Web Bluetooth is BLE GATT only; it cannot access Bluetooth Classic SPP. It requires HTTPS, a compatible browser, a user gesture, and this page must remain open. The browser does not expose a universal BLE scan list or RSSI for arbitrary devices.</p><p>Telemetry and historical samples stay in local browser storage. Nothing is sent to a cloud service. Native Android software can add Bluetooth Classic support separately; the website does not claim that capability.</p></div>
     </section>
 
@@ -222,10 +241,17 @@
       <div class="app-banner-heading">
         <div class="eyebrow">NEXORA FOR ANDROID</div>
         <h2 id="android-downloads-title">NEXORA Smart Chamber</h2>
-        <p>Smart Chamber 2.2 is a separate preview app and does not replace Android 2.0. Heater output remains disabled until the ESP32 circuit and independent safety cutoff are verified.</p>
+        <p>Smart Chamber 2.3 is a separate preview app and does not replace Android 2.0. BLE sensor discovery is improved; heater output remains disabled until the ESP32 circuit and independent safety cutoff are verified.</p>
         <p>Android may ask you to confirm installation of an APK downloaded outside Google Play.</p>
       </div>
       <div class="apk-version-list" aria-label="Available Android app versions">
+        <article class="apk-version">
+          <div class="apk-version-info">
+            <div class="apk-version-title"><strong>NEXORA Smart Chamber 2.3</strong><span class="apk-version-badge">PREVIEW</span></div>
+            <p>BLE discovery improvements · local sensor history · debug-signed preview · temperature apply locked until heater safety is verified</p>
+          </div>
+          <a class="button button-primary" href="./downloads/nexora-smart-chamber-v2.3.apk" download="NEXORA-Smart-Chamber-v2.3.apk" aria-label="Download NEXORA Smart Chamber 2.3 preview APK">Download Preview APK <span aria-hidden="true">↗</span></a>
+        </article>
         <article class="apk-version">
           <div class="apk-version-info">
             <div class="apk-version-title"><strong>NEXORA Smart Chamber 2.2</strong><span class="apk-version-badge">PREVIEW</span></div>

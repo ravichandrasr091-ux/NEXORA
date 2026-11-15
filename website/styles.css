@@ -199,6 +199,21 @@ canvas { display: block; width: 100%; height: 100%; }
 .remove-sensor { min-height: 36px; border: 1px solid #3b2a2d; border-radius: 8px; padding: 0 9px; background: #1b1013; color: #ff9a9d; cursor: pointer; font-size: 9px; }
 .profile-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
 
+.control-panel { margin-top: 21px; padding: 20px; border: 1px solid #26363a; border-radius: 14px; background: linear-gradient(130deg, #111a1d, #0b1012); }
+.control-panel-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.control-panel-heading h3 { margin: 6px 0 0; color: #e4ecea; font-size: 17px; }
+.control-panel .section-copy { margin-top: 10px; }
+.control-target-row { display: grid; grid-template-columns: 1fr minmax(180px, 260px); align-items: end; gap: 16px; margin-top: 18px; }
+.target-confirmation span, .target-slider-label { display: block; color: #849497; font-size: 10px; }
+.target-confirmation strong { display: block; margin-top: 6px; color: #f0bf68; font-size: 25px; font-variant-numeric: tabular-nums; }
+.control-panel input[type="number"] { min-height: 42px; border: 1px solid #2b3a3f; border-radius: 9px; padding: 0 12px; background: #080e10; color: #e5eeec; font: inherit; }
+.target-slider-label { margin-top: 16px; }
+.target-slider { display: block; width: 100%; margin: 12px 0; accent-color: var(--green); }
+.target-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 14px; }
+.target-actions #apply-target { margin-left: auto; }
+.target-actions .button:disabled { cursor: not-allowed; opacity: .48; }
+.target-feedback { min-height: 18px; margin: 12px 0 0; color: #cbd9d7; font-size: 11px; }
+.safety-note { margin: 8px 0 0; color: #d3b67d; font-size: 10px; line-height: 1.65; }
 .control-state { display: flex; align-items: center; gap: 15px; margin-top: 21px; padding: 20px; border: 1px solid #3c3324; border-radius: 14px; background: linear-gradient(110deg, #17140e, #0e1010); }
 .control-lock { display: grid; flex: 0 0 40px; width: 40px; height: 40px; place-items: center; border: 1px solid #5b492d; border-radius: 12px; color: var(--amber); font-size: 21px; }
 .control-state > div { flex: 1; }
@@ -279,6 +294,8 @@ canvas { display: block; width: 100%; height: 100%; }
   .chart-actions { width: 100%; }
   .chart-actions .button { flex: 1; }
   .control-state { align-items: flex-start; flex-wrap: wrap; padding: 15px; }
+  .control-target-row { grid-template-columns: 1fr; }
+  .target-actions #apply-target { margin-left: 0; }
   .control-tag { margin-left: 54px; }
   .app-banner { grid-template-columns: 1fr; gap: 18px; margin-top: 38px; padding: 21px; }
   .apk-version { align-items: stretch; flex-direction: column; }

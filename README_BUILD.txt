@@ -8,13 +8,13 @@ PROJECT AND ARCHITECTURE
 
 ANDROID APPLICATIONS
 - Android 2.0 remains available as the legacy app at `website/downloads/nexora-android-v2.0.apk`; it is not overwritten or upgraded by Smart Chamber 2.1.
-- Smart Chamber 2.2 is a separate preview app using application ID `com.nexora.smartchamber`, version code 2, and version name `2.2`. It can coexist with V2.0; Android does not share either app's private database.
-- The V2.2 preview APK is debug-signed and debuggable, not a production release. The original V2.0 signing key was not found locally. A secure, backed-up release keystore must be provisioned before distributing a production release or promising future signed updates.
+- Smart Chamber 2.3 is a separate preview app using application ID `com.nexora.smartchamber`, version code 3, and version name `2.3`. It can coexist with V2.0; Android does not share either app's private database.
+- The V2.3 preview APK is debug-signed and debuggable, not a production release. The original V2.0 signing key was not found locally. A secure, backed-up release keystore must be provisioned before distributing a production release or promising future signed updates.
 - The V2.0 APK uses application ID `com.muted.ragiincubator`, version code 2, and its original debug signing certificate. Its settings and sensor history remain local to that app.
-- V2.2 provides Home, Monitor, History, Analytics, and Settings using Jetpack Compose and Room. Live charts use a bounded in-memory stream of real BLE readings; historical graphs and CSV use locally stored sensor records.
+- V2.3 provides Home, Monitor, History, Analytics, and Settings using Jetpack Compose and Room. BLE scans are filtered for the configured sensor service advertised by the ESP32. Live charts use a bounded in-memory stream of real BLE readings; historical graphs and CSV use locally stored sensor records.
 - The 1–100°C target control is a local draft with 0.5°C steps only. Apply remains locked unless ESP32 status reports verified heater readiness. The current firmware reports `HEATER_UNAVAILABLE` and rejects every setpoint; no target or heater state is fabricated.
-- V2.2 subscribes to the existing versioned BLE acknowledgement characteristic and only displays an acknowledged target as confirmed. No physical target-control operation can succeed with the current safe-disabled firmware.
-- Smart Chamber 2.2 runs as a foreground-only BLE client and supports the existing custom sensor UUIDs and the SIG Environmental Sensing service. BLE scanning requires a user action and Android Bluetooth permissions. Reconnection is attempted while the app is foregrounded; Android background execution is not claimed.
+- V2.3 subscribes to the existing versioned BLE acknowledgement characteristic and only displays an acknowledged target as confirmed. No physical target-control operation can succeed with the current safe-disabled firmware.
+- Smart Chamber 2.3 runs as a foreground-only BLE client and supports the existing custom sensor UUIDs and the SIG Environmental Sensing service. BLE scanning requires a user action and Android Bluetooth permissions. Reconnection is attempted while the app is foregrounded; Android background execution is not claimed.
 - Live telemetry is marked stale after 15 seconds without a valid sensor message. Only real BLE readings are shown. Temperature is stored in Celsius and converted for Fahrenheit display.
 - Room history retains the most recent 30 days. To limit database growth, records are sampled at most once per sensor kind per minute, while the live display continues to update from BLE. CSV export uses Android's document picker.
 - The coordinated protocol and current safe-disabled ESP32 behavior are documented in `SMART_CHAMBER_BLE_PROTOCOL.md`. Existing temperature/humidity characteristics remain compatible. The ESP32 control service reports heater unavailable and rejects all setpoint writes.
@@ -23,10 +23,10 @@ ANDROID APPLICATIONS
 - Physical BLE and firmware tests have not been performed on the target phone and chamber. Verify the ESP32-WROOM-32/SHT4x connection before relying on sensor telemetry.
 
 WEB BLUETOOTH LIMITS AND CONNECTION
-- Open the GitHub Pages site over HTTPS in a BLE-capable Chrome/Edge browser. Click Connect device to open the browser's system chooser. `requestDevice()` requires this user gesture. GitHub Pages is static hosting; it is not an ESP32 Wi-Fi/API endpoint.
-- Web Bluetooth does not provide an unrestricted background scan list. NEXORA uses `acceptAllDevices` and requests access only to services in saved profiles. It lists services and characteristics available through the resulting GATT permission; devices may hide other services.
+- Open the GitHub Pages site over HTTPS in a BLE-capable Chrome/Edge browser. Click Connect device and choose the ESP32 advertised as `NEXORA-SENSOR`; `requestDevice()` requires this user gesture. BLE is local and does not require internet or Wi-Fi, but the page must remain open. GitHub Pages is static hosting, not an ESP32 Wi-Fi/API endpoint.
+- Web Bluetooth does not provide an unrestricted background scan list. NEXORA filters for the selected sensor service or `NEXORA` device name and requests access to saved sensor profiles, Bluetooth SIG Environmental Sensing, and the Smart Chamber control service.
 - A selected device is not called connected until `device.gatt.connect()` succeeds. The diagnostics show discovery, GATT connection, mapped characteristics, notification/read readiness, valid telemetry, and freshness separately.
-- Read-only data is received through GATT reads or notification/indication subscriptions. There are no control writes. Firmware version, uptime, and BLE RSSI are shown as unavailable unless a future firmware/protocol explicitly provides them.
+- Sensor data is received through GATT reads or notification/indication subscriptions. The website discovers the versioned Smart Chamber control service, reads controller readiness, and only enables target writes when the ESP32 reports `HEATER_READY` and `SENSOR_OK`. The current firmware reports `HEATER_UNAVAILABLE`, so target controls remain draft-only and every firmware command is rejected.
 - Keep the page in the foreground while monitoring. Browser support and BLE permissions vary by OS; Web Bluetooth is not available in Firefox or Safari in their standard configurations, and is not supported from an insecure network origin.
 
 SAVED PROFILES AND TELEMETRY FORMATS
@@ -48,7 +48,7 @@ LIVE GRAPH, HISTORY, AND DEVICE MANAGEMENT
 - Saved BLE permission and profile details are local to the same browser profile. Reconnect is offered only when the browser still grants permission. Forgetting a saved device leaves its local reading history in place.
 
 EXISTING ESP32 FIRMWARE EXAMPLE
-- `ESP32_BLE_SHT4X.ino` reads one Adafruit SHT4x sensor over I2C (SDA GPIO26, SCL GPIO27). It now exposes both the original NEXORA custom service (UTF-8 numeric notifications) and Bluetooth SIG Environmental Sensing service (two-byte little-endian notifications), preserving existing BLE clients. The original 128-bit service remains advertised; Web Bluetooth uses the user-driven all-device chooser and explicitly requests permission for the SIG service.
+- `ESP32_BLE_SHT4X.ino` reads one Adafruit SHT4x sensor over I2C (SDA GPIO26, SCL GPIO27). It exposes the original NEXORA custom service (UTF-8 numeric notifications), Bluetooth SIG Environmental Sensing service (two-byte little-endian notifications), and versioned Smart Chamber control service. Android scanning filters for the advertised NEXORA sensor service; Web Bluetooth offers the matching service or the `NEXORA` device name and requests access to sensor and control UUIDs.
 - Arduino IDE: install Espressif ESP32 board support and the Adafruit SHT4x library/dependencies. Wire the module per its datasheet: VIN to a compatible 3V3 supply, GND to GND, SDA to GPIO26, and SCL to GPIO27. Select the actual ESP32 board/port and upload the `.ino`.
 - Existing custom UUIDs: service `7b7e0001-7d7a-4f4e-9b8d-2f8c4a6d1000`, temperature `7b7e0002-7d7a-4f4e-9b8d-2f8c4a6d1000`, humidity `7b7e0003-7d7a-4f4e-9b8d-2f8c4a6d1000`.
 - SIG UUIDs: service `181A`, temperature `2A6E`, humidity `2A6F`. The firmware obtains both values from the same SHT4x reading, serializes SIG values as signed/unsigned centi-units, and notifies only while a BLE client is connected.
@@ -61,16 +61,17 @@ TESTING
 - Device/GATT tests require a compatible physical BLE sensor: select it; confirm GATT status, discovered UUID/property diagnostics, chosen read/notify readiness, and valid live telemetry separately.
 - Verify temperature/humidity byte decoding with the decoder tests; then compare actual sensor readings to a trusted local instrument. Pause/resume, clear graph, range selection, logging, CSV export, disconnect/stale state, and reconnect can be exercised on hardware.
 - Test browser permission revocation and absent service/characteristic mappings to confirm clear diagnostics. Browser automation cannot prove physical BLE radio behavior.
-- Android Chrome test for the website: install/open Chrome on a BLE-capable Android phone, open the HTTPS URL, grant Bluetooth/Nearby Devices permissions when prompted, then tap Connect and choose the device. Keep the tab/PWA open.
+- Android Chrome test for the website: install/open Chrome on a BLE-capable Android phone, open the HTTPS URL, grant Bluetooth/Nearby Devices permissions when prompted, then tap Connect and choose `NEXORA-SENSOR`. Keep the tab/PWA open.
 - Windows test: use current Chrome or Edge on a BLE-capable Windows computer, open the HTTPS URL, enable Bluetooth in Windows, tap Connect, and select the BLE device. Browser support depends on OS drivers and permissions.
 - No physical ESP32, sensor, Android handset, or Windows BLE hardware verification is claimed until these steps have been performed on the user's actual devices.
 
 BUILD AND DEPLOY
 - GitHub Actions on pushes to `main` tests and deploys the static website with the preserved Android 2.0 APK and Smart Chamber 2.1/2.2 preview APKs.
-- Website telemetry remains direct browser BLE. Wi-Fi forwarding requires a separately provisioned HTTPS API or MQTT-over-TLS backend, device identity/authentication, and private configuration; none is currently present, so no remote dashboard or web target control is claimed.
+- Website telemetry and target requests use direct browser BLE. Target apply remains locked by the current firmware's `HEATER_UNAVAILABLE` status. Wi-Fi forwarding requires a separately provisioned HTTPS API or MQTT-over-TLS backend, device identity/authentication, and private configuration; none is currently present.
 - Android 2.0 uses certificate SHA-256 `c25c4d71123b7de2e7de0bb97800bd662800c0c5a570b82efadbe34401b3ee90`. Android 3.x builds use different package identities and/or signing keys; they are not offered as updates.
 - Website: https://ravichandrasr091-ux.github.io/NEXORA/
 - Android 2.0 APK: https://ravichandrasr091-ux.github.io/NEXORA/downloads/nexora-android-v2.0.apk
+- Smart Chamber 2.3 preview APK: https://ravichandrasr091-ux.github.io/NEXORA/downloads/nexora-smart-chamber-v2.3.apk
 - Smart Chamber 2.2 preview APK: https://ravichandrasr091-ux.github.io/NEXORA/downloads/nexora-smart-chamber-v2.2.apk
 - Smart Chamber 2.1 previous preview APK: https://ravichandrasr091-ux.github.io/NEXORA/downloads/nexora-smart-chamber-v2.1.apk
 - A debug APK is for testing and is not a Play Store release.

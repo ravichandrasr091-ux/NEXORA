@@ -8,6 +8,8 @@
     humidity: "00002a6f",
     pressure: "00002a6d"
   };
+  const CONTROL_STATUS_PREFIX = "NEXORA/1|STATUS|";
+  const CONTROL_ACK_PREFIX = "NEXORA/1|ACK|";
   const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   const textDecoder = new TextDecoder("utf-8", { fatal: true });
 
@@ -121,7 +123,58 @@
     return value;
   }
 
-  const api = Object.freeze({ normalizeUuid, isValidUuid, parseReading });
+  function parseControllerStatus(dataView) {
+    const fields = bytesToText(dataView).split("|");
+    if (fields.length !== 6 || fields[0] !== "NEXORA/1" || fields[1] !== "STATUS" ||
+        !["HEATER_READY", "HEATER_UNAVAILABLE"].includes(fields[2]) ||
+        !["SENSOR_OK", "SENSOR_FAULT"].includes(fields[3]) ||
+        !/^\d+$/.test(fields[4]) || !/^\d+$/.test(fields[5])) {
+      throw new Error("Invalid Smart Chamber controller status.");
+    }
+    return {
+      heaterState: fields[2],
+      sensorState: fields[3],
+      uptimeSeconds: Number(fields[4]),
+      bootCount: Number(fields[5])
+    };
+  }
+
+  function parseControllerAcknowledgement(dataView) {
+    const fields = bytesToText(dataView).split("|");
+    if (fields.length !== 5 || fields[0] !== "NEXORA/1" || fields[1] !== "ACK" ||
+        !/^\d+$/.test(fields[2]) || Number(fields[2]) > 65535 ||
+        !["ACCEPTED", "REJECTED"].includes(fields[3]) ||
+        !/^[A-Z0-9_]+$/.test(fields[4])) {
+      throw new Error("Invalid Smart Chamber command acknowledgement.");
+    }
+    return {
+      sequence: Number(fields[2]),
+      result: fields[3],
+      reason: fields[4]
+    };
+  }
+
+  function encodeTargetCommand(sequence, celsius) {
+    if (!Number.isInteger(sequence) || sequence < 1 || sequence > 65535) {
+      throw new Error("Command sequence must be between 1 and 65535.");
+    }
+    if (!Number.isFinite(celsius) || celsius < 1 || celsius > 100 ||
+        Math.abs(celsius * 2 - Math.round(celsius * 2)) > 0.0001) {
+      throw new Error("Target must be between 1°C and 100°C in 0.5°C increments.");
+    }
+    return `NEXORA/1|SET_TARGET|${sequence}|${Math.round(celsius * 10)}`;
+  }
+
+  const api = Object.freeze({
+    normalizeUuid,
+    isValidUuid,
+    parseReading,
+    parseControllerStatus,
+    parseControllerAcknowledgement,
+    encodeTargetCommand,
+    CONTROL_STATUS_PREFIX,
+    CONTROL_ACK_PREFIX
+  });
   globalThis.NexoraBleProtocol = api;
   if (typeof module !== "undefined" && module.exports) module.exports = api;
 })();

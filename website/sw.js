@@ -1,6 +1,6 @@
 "use strict";
 
-const CACHE_NAME = "nexora-shell-v10";
+const CACHE_NAME = "nexora-shell-v11";
 const APP_SHELL = [
   "./",
   "./styles.css",
