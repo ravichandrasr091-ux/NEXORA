@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
   "packageName": "com.nexora.smartchamber",
-  "versionCode": 7,
-  "versionName": "2.7",
-  "apkFile": "nexora-smart-chamber-v2.7.apk",
-  "sha256": "ace6afcad42f72eecf9480d9fbeaa4499838e157653c84143d8156625e3000e1",
-  "releaseNotes": "Persistent background BLE monitoring, automatic reconnect, live readings notification, and ESP32 safety lockout alerts."
+  "versionCode": 711,
+  "versionName": "2.7.11v",
+  "apkFile": "elvora-smart-chamber-v2.7.11v.apk",
+  "sha256": "673e88cf37fabbad0c23f81c564642ae848f64f21f876bd15cee34d34cbdb4f9",
+  "releaseNotes": "ELVORA industrial branding and a live BLE home header with real connection state and device identity. Existing telemetry, background monitoring, history, analytics, target controls, and safety reporting are preserved."
 }
