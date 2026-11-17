@@ -12,9 +12,9 @@ test("latest update catalog matches the downloadable Smart Chamber APK", () => {
   const release = JSON.parse(fs.readFileSync(path.join(downloads, "latest.json"), "utf8"));
   assert.equal(release.schemaVersion, 1);
   assert.equal(release.packageName, "com.nexora.smartchamber");
-  assert.equal(release.versionCode, 7);
-  assert.equal(release.versionName, "2.7");
-  assert.match(release.apkFile, /^nexora-smart-chamber-v2\.7\.apk$/);
+  assert.equal(release.versionCode, 711);
+  assert.equal(release.versionName, "2.7.11v");
+  assert.match(release.apkFile, /^elvora-smart-chamber-v2\.7\.11v\.apk$/);
   assert.match(release.sha256, /^[a-f0-9]{64}$/i);
 
   const apk = fs.readFileSync(path.join(downloads, release.apkFile));
