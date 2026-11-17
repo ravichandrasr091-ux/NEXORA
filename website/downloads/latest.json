@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
   "packageName": "com.nexora.smartchamber",
-  "versionCode": 6,
-  "versionName": "2.6",
-  "apkFile": "nexora-smart-chamber-v2.6.apk",
-  "sha256": "71a219a865c9232e910d223f1b1e68409c13e113ca94744b5ceb21dfd2e9e80c",
-  "releaseNotes": "Online in-app update check and installer handoff; target range raised to 1–60°C in 0.5°C steps."
+  "versionCode": 7,
+  "versionName": "2.7",
+  "apkFile": "nexora-smart-chamber-v2.7.apk",
+  "sha256": "ace6afcad42f72eecf9480d9fbeaa4499838e157653c84143d8156625e3000e1",
+  "releaseNotes": "Persistent background BLE monitoring, automatic reconnect, live readings notification, and ESP32 safety lockout alerts."
 }
